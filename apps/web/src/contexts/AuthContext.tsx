@@ -1,82 +1,80 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { authService, UserProfile } from '@/lib/auth';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  role: 'learner' | 'creator';
+  first_name?: string;
+  last_name?: string;
+}
 
 interface AuthContextType {
-  user: any | null;
+  user: User | null;
   profile: UserProfile | null;
   loading: boolean;
   isAuthenticated: boolean;
   isCreator: boolean;
   isLearner: boolean;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-
-  const loadUser = useCallback(async () => {
-    try {
-      const { user: currentUser, profile: currentProfile } = await authService.getCurrentUser();
-      setUser(currentUser);
-      setProfile(currentProfile);
-    } catch (error) {
-      console.error('❌ Erreur chargement user:', error);
-      setUser(null);
-      setProfile(null);
-    } finally {
-      setLoading(false);
-      setInitialized(true);
-    }
-  }, []);
 
   useEffect(() => {
-    // Charger l'utilisateur au démarrage (une seule fois)
-    if (!initialized) {
-      loadUser();
-    }
-
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth event:', event);
-      
-      if (event === 'SIGNED_IN') {
-        // Utilisateur vient de se connecter
-        await loadUser();
-      } else if (event === 'SIGNED_OUT') {
-        // Utilisateur vient de se déconnecter
-        setUser(null);
-        setProfile(null);
-      } else if (event === 'TOKEN_REFRESHED') {
-        // Token rafraîchi, ne rien faire (évite les rechargements)
-        console.log('🔄 Token rafraîchi');
-      } else if (event === 'USER_UPDATED') {
-        // Profil mis à jour
-        await loadUser();
+    // Récupérer la session initiale
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setLoading(false);
       }
     });
 
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [initialized, loadUser]);
+    // Écouter les changements
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
 
-  const signOut = async () => {
-    await authService.signOut();
-    setUser(null);
-    setProfile(null);
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadProfile = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      setProfile(data as UserProfile);
+    } catch (error) {
+      console.error('Erreur profil:', error);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const refreshProfile = async () => {
-    await loadUser();
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
   };
 
   const value: AuthContextType = {
