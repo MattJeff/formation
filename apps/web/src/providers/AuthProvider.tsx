@@ -31,7 +31,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // false au départ
   const initializedRef = useRef(false);
 
   useEffect(() => {
@@ -41,39 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log('🔐 [AUTH] Initialisation...');
+    console.log('🔐 [AUTH] Initialisation (onAuthStateChange uniquement)...');
     initializedRef.current = true;
 
-    // 1. Récupérer la session au démarrage
-    console.log('🔐 [AUTH] Appel getSession()...');
-    supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
-        console.log('🔐 [AUTH] Promise résolue !');
-        if (error) {
-          console.error('❌ [AUTH] Erreur getSession:', error);
-        }
-        console.log('🔐 [AUTH] Session récupérée:', session ? '✅ Connecté' : '❌ Non connecté');
-        console.log('🔐 [AUTH] User:', session?.user?.email || 'Aucun');
-        console.log('🔐 [AUTH] User ID:', session?.user?.id || 'Aucun');
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        console.log('🔐 [AUTH] État mis à jour - loading:', false, 'user:', session?.user?.email || null);
-      })
-      .catch((error) => {
-        console.error('❌ [AUTH] Catch error:', error);
-        setLoading(false);
-      });
-
-    // 2. Écouter les changements
+    // Écouter les changements d'auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔐 [AUTH] Événement:', event);
+      console.log('🔐 [AUTH] User:', session?.user?.email || 'Aucun');
       setSession(session);
       setUser(session?.user ?? null);
     });
 
-    // Pas de cleanup pour éviter la réinitialisation en Strict Mode
-    // La subscription sera nettoyée automatiquement au unmount final
+    console.log('✅ [AUTH] Listener actif, en attente d\'authentification...');
   }, []);
 
   return (
