@@ -1,85 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { LogOut, User, Settings, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Header() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [role, setRole] = useState<'learner' | 'creator' | null>(null);
-
-  useEffect(() => {
-    // Récupérer l'utilisateur connecté et son rôle
-    const getUser = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      if (currentUser) {
-        setUser(currentUser);
-        
-        // Récupérer le rôle depuis la table profiles
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', currentUser.id)
-          .single();
-        
-        if (error) {
-          console.error('❌ Erreur récupération profil:', error);
-          // Fallback: utiliser le rôle des métadonnées si la table n'existe pas
-          const roleFromMetadata = currentUser.user_metadata?.role || 'learner';
-          setRole(roleFromMetadata as 'learner' | 'creator');
-        } else if (profile) {
-          setRole(profile.role as 'learner' | 'creator');
-        }
-      }
-    };
-
-    getUser();
-
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        
-        // Récupérer le rôle
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (error) {
-          console.error('❌ Erreur récupération profil:', error);
-          // Fallback
-          const roleFromMetadata = session.user.user_metadata?.role || 'learner';
-          setRole(roleFromMetadata as 'learner' | 'creator');
-        } else if (profile) {
-          setRole(profile.role as 'learner' | 'creator');
-        }
-      } else {
-        setUser(null);
-        setRole(null);
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
+  const { user, profile, isCreator, isLearner, signOut } = useAuth();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setRole(null);
+    await signOut();
     router.push('/');
     router.refresh();
   };
 
   // Navigation pour LEARNER
-  if (role === 'learner') {
+  if (isLearner) {
     return (
       <header className="border-b border-border bg-background">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -105,7 +42,7 @@ export function Header() {
                   <User className="h-4 w-4" />
                 </div>
                 <span className="text-sm font-medium">
-                  {user?.user_metadata?.first_name || 'Apprenant'}
+                  {profile?.first_name || 'Apprenant'}
                 </span>
               </button>
 
@@ -134,7 +71,7 @@ export function Header() {
   }
 
   // Navigation pour CREATOR
-  if (role === 'creator') {
+  if (isCreator) {
     return (
       <header className="border-b border-border bg-background">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -163,7 +100,7 @@ export function Header() {
                   <User className="h-4 w-4" />
                 </div>
                 <span className="text-sm font-medium">
-                  {user?.user_metadata?.first_name || 'Créateur'}
+                  {profile?.first_name || 'Créateur'}
                 </span>
               </button>
 
