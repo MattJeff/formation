@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { LogOut, User, Settings, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
-import { supabase } from '@/lib/supabase-browser';
+import { supabase } from '@/lib/supabase';
 
 export function Header() {
   const router = useRouter();
