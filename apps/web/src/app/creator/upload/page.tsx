@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Upload, Video, FileText, Image, ArrowLeft } from 'lucide-react';
+import { Video, FileText, Image, ArrowLeft } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
 export default function UploadPage() {
