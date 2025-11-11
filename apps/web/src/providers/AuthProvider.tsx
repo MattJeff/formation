@@ -10,7 +10,7 @@
  */
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase-browser';
+import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
 // Types

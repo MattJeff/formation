@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Plus, BookOpen, Users, Clock, TrendingUp, Edit, Eye } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
-import { supabase } from '@/lib/supabase-browser';
+import { supabase } from '@/lib/supabase';
 
 interface Course {
   id: string;
