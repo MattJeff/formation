@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Video, FileText, ImageIcon } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
 export default function UploadPage() {
@@ -26,7 +26,7 @@ export default function UploadPage() {
             <p className="text-sm text-muted-foreground">PDF, DOCX</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-6 text-center hover:border-primary cursor-pointer">
-            <Image className="mx-auto mb-4 h-12 w-12 text-primary" />
+            <ImageIcon className="mx-auto mb-4 h-12 w-12 text-primary" />
             <h3 className="mb-2 font-semibold">Image</h3>
             <p className="text-sm text-muted-foreground">PNG, JPG</p>
           </div>
