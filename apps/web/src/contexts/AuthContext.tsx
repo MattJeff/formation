@@ -31,14 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Récupérer la session initiale
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          loadProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        console.error('Erreur getSession:', error);
         setLoading(false);
-      }
-    });
+      });
 
     // Écouter les changements
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -56,15 +61,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
-      setProfile(data as UserProfile);
+      if (error) {
+        console.error('Erreur profil:', error);
+        setProfile(null);
+      } else {
+        setProfile(data as UserProfile);
+      }
     } catch (error) {
-      console.error('Erreur profil:', error);
+      console.error('Erreur profil catch:', error);
       setProfile(null);
     } finally {
       setLoading(false);
