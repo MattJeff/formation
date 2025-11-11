@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft, Star } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
-export default function ReviewsPage({ params }: { params: { id: string } }) {
+export default function ReviewsPage({ params: _params }: { params: { id: string } }) {
   const reviews = [
     {
       id: 1,

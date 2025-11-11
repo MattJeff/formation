@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, GripVertical, Video, FileText, Code } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
-export default function CurriculumPage({ params }: { params: { id: string } }) {
+export default function CurriculumPage({ params: _params }: { params: { id: string } }) {
   const sections = [
     {
       id: 1,

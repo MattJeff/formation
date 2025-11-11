@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, Code, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
 export default function NewProjectPage() {

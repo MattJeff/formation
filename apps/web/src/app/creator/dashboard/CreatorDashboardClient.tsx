@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
-import { DollarSign, Users, TrendingUp, BookOpen, Plus, Eye, Star, Clock, Loader2 } from 'lucide-react';
+import { DollarSign, Users, TrendingUp, BookOpen, Plus, Star, Clock, Loader2 } from 'lucide-react';
 
 export function CreatorDashboardClient() {
   const router = useRouter();

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft, Search, Download } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
-export default function StudentsPage({ params }: { params: { id: string } }) {
+export default function StudentsPage({ params: _params }: { params: { id: string } }) {
   const students = [
     { id: 1, name: 'Alice Martin', email: 'alice@example.com', progress: 75, enrolled: '2024-11-01', lastActive: '2024-11-10' },
     { id: 2, name: 'Bob Dupont', email: 'bob@example.com', progress: 45, enrolled: '2024-11-03', lastActive: '2024-11-09' },

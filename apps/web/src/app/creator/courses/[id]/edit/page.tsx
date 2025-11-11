@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
-export default function EditCoursePage({ params }: { params: { id: string } }) {
+export default function EditCoursePage({ params: _params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen bg-background">
       <Header />

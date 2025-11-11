@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft, TrendingUp, Users, Eye, Clock } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
-export default function AnalyticsPage({ params }: { params: { id: string } }) {
+export default function AnalyticsPage({ params: _params }: { params: { id: string } }) {
   const stats = [
     { label: 'Vues totales', value: '12,450', change: '+12%', icon: Eye, color: 'text-blue-500' },
     { label: 'Étudiants actifs', value: '1,234', change: '+8%', icon: Users, color: 'text-green-500' },

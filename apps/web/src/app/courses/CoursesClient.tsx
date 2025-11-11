@@ -7,8 +7,8 @@ import { Header } from '@/components/layout/Header';
 import { Search, Filter } from 'lucide-react';
 
 export function CoursesClient() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [_user, setUser] = useState<any>(null);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {

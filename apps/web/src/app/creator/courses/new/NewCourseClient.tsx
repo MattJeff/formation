@@ -34,17 +34,11 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string>('');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
     if (uploadedFile) {
       setFile(uploadedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFilePreview(reader.result as string);
-      };
-      reader.readAsDataURL(uploadedFile);
     }
   };
 
@@ -178,7 +172,7 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setFile(null); setFilePreview(''); }}
+                  onClick={() => setFile(null)}
                   className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground"
                 >
                   <X className="h-4 w-4" />
