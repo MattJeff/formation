@@ -9,7 +9,7 @@
  * Pas de boucles, pas de complexité.
  */
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -32,17 +32,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     // Ne s'exécuter qu'une seule fois
-    if (initialized) {
+    if (initializedRef.current) {
       console.log('✅ [AUTH] Déjà initialisé');
       return;
     }
 
     console.log('🔐 [AUTH] Initialisation...');
-    setInitialized(true);
+    initializedRef.current = true;
 
     // 1. Récupérer la session au démarrage
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔐 [AUTH] Nettoyage');
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, session, loading }}>
