@@ -9,7 +9,7 @@ import { BookOpen, Trophy, Target, TrendingUp, Loader2 } from 'lucide-react';
 
 export function DashboardClient() {
   const router = useRouter();
-  const { isAuthenticated, isCreator, loading } = useAuth();
+  const { isAuthenticated, isCreator, loading, profile } = useAuth();
 
   useEffect(() => {
     if (!loading) {
@@ -43,7 +43,7 @@ export function DashboardClient() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-bold">
-            Bienvenue, {user?.user_metadata?.first_name || 'Apprenant'} ! 👋
+            Bienvenue, {profile?.first_name || 'Apprenant'} ! 👋
           </h1>
           <p className="text-muted-foreground">
             Continuez votre parcours d'apprentissage
