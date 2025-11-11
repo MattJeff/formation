@@ -49,22 +49,46 @@ export function useProfile() {
     console.log('👤 [PROFILE] Chargement pour:', user.id);
     setLoading(true);
 
+    // TIMEOUT: Si Supabase ne répond pas en 2 secondes, utiliser user_metadata
+    const timeout = setTimeout(() => {
+      console.log('⚠️ [PROFILE] Timeout Supabase, utilisation user_metadata');
+      const fallbackProfile: Profile = {
+        id: user.id,
+        email: user.email || '',
+        role: (user.user_metadata?.role as 'learner' | 'creator') || 'learner',
+        first_name: user.user_metadata?.first_name,
+        last_name: user.user_metadata?.last_name,
+      };
+      console.log('✅ [PROFILE] Fallback:', fallbackProfile.role);
+      setProfile(fallbackProfile);
+      setLoading(false);
+      setLoadedUserId(user.id);
+    }, 2000);
+
     supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
       .then(({ data, error }) => {
+        clearTimeout(timeout);
         if (error) {
           console.error('❌ [PROFILE] Erreur:', error);
           console.error('❌ [PROFILE] Code:', error.code);
           console.error('❌ [PROFILE] Message:', error.message);
-          console.error('❌ [PROFILE] Details:', error.details);
-          setError(error.message);
-          setProfile(null);
+          // Utiliser user_metadata en fallback
+          const fallbackProfile: Profile = {
+            id: user.id,
+            email: user.email || '',
+            role: (user.user_metadata?.role as 'learner' | 'creator') || 'learner',
+            first_name: user.user_metadata?.first_name,
+            last_name: user.user_metadata?.last_name,
+          };
+          console.log('✅ [PROFILE] Fallback après erreur:', fallbackProfile.role);
+          setProfile(fallbackProfile);
+          setError(null);
         } else {
-          console.log('✅ [PROFILE] Chargé:', data?.role || 'pas de rôle');
-          console.log('✅ [PROFILE] Data complète:', data);
+          console.log('✅ [PROFILE] Chargé depuis DB:', data?.role || 'pas de rôle');
           setProfile(data);
           setError(null);
         }
@@ -72,7 +96,18 @@ export function useProfile() {
         setLoadedUserId(user.id);
       })
       .catch((err) => {
+        clearTimeout(timeout);
         console.error('❌ [PROFILE] Catch error:', err);
+        // Utiliser user_metadata en fallback
+        const fallbackProfile: Profile = {
+          id: user.id,
+          email: user.email || '',
+          role: (user.user_metadata?.role as 'learner' | 'creator') || 'learner',
+          first_name: user.user_metadata?.first_name,
+          last_name: user.user_metadata?.last_name,
+        };
+        console.log('✅ [PROFILE] Fallback après catch:', fallbackProfile.role);
+        setProfile(fallbackProfile);
         setLoading(false);
         setLoadedUserId(user.id);
       });
