@@ -90,13 +90,16 @@ export function useProfile() {
     console.log('📡 [PROFILE] Appel Supabase.from(profiles)...');
     console.log('📡 [PROFILE] Query: SELECT * FROM profiles WHERE id =', user.id);
     
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-      .then(({ data, error }) => {
-        console.log('📥 [PROFILE] Promise résolue !');
+    const fetchProfile = async () => {
+      try {
+        console.log('📥 [PROFILE] Début fetch...');
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        console.log('📥 [PROFILE] Fetch terminé');
         console.log('📥 [PROFILE] data:', data);
         console.log('📥 [PROFILE] error:', error);
         console.log('⏱️ [PROFILE] clearTimeout');
@@ -132,9 +135,8 @@ export function useProfile() {
         setLoading(false);
         console.log('📊 [PROFILE] setLoadedUserId:', user.id);
         setLoadedUserId(user.id);
-        console.log('✅ [PROFILE] Then terminé');
-      })
-      .catch((err) => {
+        console.log('✅ [PROFILE] Fetch terminé avec succès');
+      } catch (err) {
         console.log('🔥 [PROFILE] CATCH DÉCLENCHÉ !');
         console.log('🔥 [PROFILE] Erreur catch:', err);
         clearTimeout(timeout);
@@ -155,7 +157,10 @@ export function useProfile() {
         console.log('📊 [PROFILE] setLoadedUserId:', user.id);
         setLoadedUserId(user.id);
         console.log('✅ [PROFILE] Catch terminé');
-      });
+      }
+    };
+    
+    fetchProfile();
     
     console.log('✅ [PROFILE] Fin du useEffect');
   }, [user?.id, loadedUserId]);
