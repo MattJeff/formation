@@ -7,7 +7,7 @@
  * Pas de complexité, juste ce qui marche.
  */
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 // Variables d'environnement
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -21,6 +21,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 console.log('✅ [SUPABASE] Initialisation du client');
 
 // Créer le client (une seule fois)
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
 console.log('✅ [SUPABASE] Client créé avec succès');
