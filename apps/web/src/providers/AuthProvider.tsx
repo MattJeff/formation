@@ -45,11 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializedRef.current = true;
 
     // 1. Récupérer la session au démarrage
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ [AUTH] Erreur getSession:', error);
+      }
       console.log('🔐 [AUTH] Session récupérée:', session ? '✅ Connecté' : '❌ Non connecté');
+      console.log('🔐 [AUTH] User:', session?.user?.email || 'Aucun');
+      console.log('🔐 [AUTH] User ID:', session?.user?.id || 'Aucun');
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      console.log('🔐 [AUTH] État mis à jour - loading:', false, 'user:', session?.user?.email || null);
     });
 
     // 2. Écouter les changements

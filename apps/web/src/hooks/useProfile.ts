@@ -29,9 +29,11 @@ export function useProfile() {
   const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('👤 [PROFILE] useEffect déclenché - user:', user?.email || 'undefined');
+    
     // Si pas d'utilisateur
     if (!user) {
-      console.log('👤 [PROFILE] Pas d\'utilisateur');
+      console.log('👤 [PROFILE] Pas d\'utilisateur, attente...');
       setProfile(null);
       setLoading(false);
       setLoadedUserId(null);
