@@ -3,11 +3,27 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogOut, User, Settings, TrendingUp } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Header() {
   const router = useRouter();
-  const { user, profile, isCreator, isLearner, signOut } = useAuth();
+  const { profile, isCreator, isLearner, signOut, loading } = useAuth();
+
+  // Afficher un skeleton pendant le chargement
+  if (loading) {
+    return (
+      <header className="border-b border-border bg-background">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <div className="h-8 w-32 animate-pulse rounded bg-muted"></div>
+          <div className="flex gap-4">
+            <div className="h-8 w-20 animate-pulse rounded bg-muted"></div>
+            <div className="h-8 w-20 animate-pulse rounded bg-muted"></div>
+            <div className="h-10 w-32 animate-pulse rounded bg-muted"></div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   const handleLogout = async () => {
     await signOut();
