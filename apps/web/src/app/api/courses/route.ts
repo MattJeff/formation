@@ -50,19 +50,31 @@ export async function POST(request: Request) {
     if (userError || !user) {
       console.error('❌ Erreur auth:', userError);
       return NextResponse.json(
-        { error: 'Non authentifié' },
+        { error: 'Non authentifié', details: userError?.message },
         { status: 401 }
       );
     }
 
+    console.log('✅ Utilisateur authentifié:', user.id);
+
     // Vérifier que l'utilisateur est un creator
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'creator') {
+    if (profileError) {
+      console.error('❌ Erreur profil:', profileError);
+      // Si le profil n'existe pas, utiliser les métadonnées
+      const roleFromMetadata = user.user_metadata?.role || 'learner';
+      if (roleFromMetadata !== 'creator') {
+        return NextResponse.json(
+          { error: 'Seuls les créateurs peuvent créer des cours' },
+          { status: 403 }
+        );
+      }
+    } else if (profile?.role !== 'creator') {
       return NextResponse.json(
         { error: 'Seuls les créateurs peuvent créer des cours' },
         { status: 403 }
