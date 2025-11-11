@@ -1,38 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { BookOpen, Trophy, Target, TrendingUp, Loader2 } from 'lucide-react';
 
 export function DashboardClient() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, isCreator, loading } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { user: currentUser } = await auth.getUser();
-      
-      if (!currentUser) {
-        router.push('/login');
-        return;
+    if (!loading) {
+      if (!isAuthenticated) {
+        router.replace('/login');
+      } else if (isCreator) {
+        router.replace('/creator/dashboard');
       }
-
-      // Si c'est un créateur, rediriger vers le dashboard créateur
-      if (currentUser.user_metadata?.role === 'creator') {
-        router.push('/creator/dashboard');
-        return;
-      }
-
-      setUser(currentUser);
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, [router]);
+    }
+  }, [loading, isAuthenticated, isCreator, router]);
 
   if (loading) {
     return (
