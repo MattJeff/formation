@@ -3,11 +3,20 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogOut, User, Settings, TrendingUp } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/providers/AuthProvider';
+import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/lib/supabase-browser';
 
 export function Header() {
   const router = useRouter();
-  const { profile, isCreator, isLearner, signOut, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
+  
+  const loading = authLoading || profileLoading;
+  const isCreator = profile?.role === 'creator';
+  const isLearner = profile?.role === 'learner';
+  
+  console.log('📡 [HEADER] Render - User:', user?.email, 'Role:', profile?.role);
 
   // Afficher un skeleton pendant le chargement
   if (loading) {
@@ -26,9 +35,9 @@ export function Header() {
   }
 
   const handleLogout = async () => {
-    await signOut();
+    console.log('🚪 [HEADER] Déconnexion...');
+    await supabase.auth.signOut();
     router.push('/');
-    router.refresh();
   };
 
   // Navigation pour LEARNER

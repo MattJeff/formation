@@ -1,26 +1,62 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/providers/AuthProvider';
+import { useProfile } from '@/hooks/useProfile';
 import { Header } from '@/components/layout/Header';
 import { BookOpen, Trophy, Target, TrendingUp, Loader2 } from 'lucide-react';
 
 export function DashboardClient() {
-  const { isAuthenticated, isCreator, loading, profile } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
+  
+  const loading = authLoading || profileLoading;
+  const isCreator = profile?.role === 'creator';
+  
+  console.log('📊 [DASHBOARD] Render - User:', user?.email, 'Role:', profile?.role);
 
   // Afficher le loader pendant le chargement
   if (loading) {
+    console.log('⏳ [DASHBOARD] Chargement...');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-3 text-muted-foreground">Chargement...</p>
       </div>
     );
   }
 
-  // Si pas authentifié ou creator, ne rien afficher (le Header gère la redirection)
-  if (!isAuthenticated || isCreator) {
-    return null;
+  // Si pas connecté, afficher message
+  if (!user) {
+    console.log('❌ [DASHBOARD] Non connecté');
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg">Vous devez être connecté</p>
+          <Link href="/login" className="mt-4 inline-block text-primary hover:underline">
+            Se connecter
+          </Link>
+        </div>
+      </div>
+    );
   }
+
+  // Si creator, afficher message
+  if (isCreator) {
+    console.log('🚫 [DASHBOARD] Creator détecté, redirection...');
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg">Redirection vers le dashboard créateur...</p>
+          <Link href="/creator/dashboard" className="mt-4 inline-block text-primary hover:underline">
+            Aller au dashboard créateur
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
+  console.log('✅ [DASHBOARD] Affichage du dashboard learner');
 
   const stats = [
     { label: 'Cours en cours', value: '0', icon: BookOpen, color: 'text-blue-500' },
