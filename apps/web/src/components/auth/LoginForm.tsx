@@ -21,7 +21,12 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword(email, password);
+      console.log(' [LOGIN] Tentative de connexion:', email);
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      console.log(' [LOGIN] Réponse:', { data, error: signInError });
 
       if (signInError) {
         if (signInError.message.includes('Invalid login credentials')) {
@@ -53,7 +58,12 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const { error: oauthError } = await supabase.auth.signInWithPasswordWithOAuth(provider);
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
       if (oauthError) {
         setError(`Erreur de connexion avec ${provider}: ${oauthError.message}`);
