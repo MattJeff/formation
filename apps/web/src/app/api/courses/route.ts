@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+// TODO: Réactiver l'authentification
+// import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+// import { cookies } from 'next/headers';
 
 // GET - Récupérer tous les cours
 export async function GET(request: Request) {
