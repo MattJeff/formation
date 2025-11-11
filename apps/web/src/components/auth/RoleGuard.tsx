@@ -19,7 +19,7 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
     const checkRole = async () => {
       try {
         // Vérifier si l'utilisateur est connecté
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabase.supabase.auth.getUser();
 
         if (userError || !user) {
           console.log('❌ Utilisateur non connecté, redirection vers /login');

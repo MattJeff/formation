@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 
 export function LoginForm() {
@@ -21,7 +21,7 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await auth.signIn(email, password);
+      const { data, error: signInError } = await supabase.auth.signInWithPassword(email, password);
 
       if (signInError) {
         if (signInError.message.includes('Invalid login credentials')) {
@@ -53,7 +53,7 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const { error: oauthError } = await auth.signInWithOAuth(provider);
+      const { error: oauthError } = await supabase.auth.signInWithPasswordWithOAuth(provider);
 
       if (oauthError) {
         setError(`Erreur de connexion avec ${provider}: ${oauthError.message}`);

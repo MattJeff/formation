@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 export function SignupForm() {
@@ -70,7 +70,7 @@ export function SignupForm() {
     }
 
     try {
-      const { data, error: signUpError } = await auth.signUp(
+      const { data, error: signUpError } = await supabase.auth.signUp(
         formData.email,
         formData.password,
         {
