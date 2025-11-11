@@ -57,13 +57,22 @@ export function useProfile() {
       .then(({ data, error }) => {
         if (error) {
           console.error('❌ [PROFILE] Erreur:', error);
+          console.error('❌ [PROFILE] Code:', error.code);
+          console.error('❌ [PROFILE] Message:', error.message);
+          console.error('❌ [PROFILE] Details:', error.details);
           setError(error.message);
           setProfile(null);
         } else {
           console.log('✅ [PROFILE] Chargé:', data?.role || 'pas de rôle');
+          console.log('✅ [PROFILE] Data complète:', data);
           setProfile(data);
           setError(null);
         }
+        setLoading(false);
+        setLoadedUserId(user.id);
+      })
+      .catch((err) => {
+        console.error('❌ [PROFILE] Catch error:', err);
         setLoading(false);
         setLoadedUserId(user.id);
       });
