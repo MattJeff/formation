@@ -59,10 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
     });
 
-    return () => {
-      console.log('🔐 [AUTH] Nettoyage');
-      subscription.unsubscribe();
-    };
+    // Pas de cleanup pour éviter la réinitialisation en Strict Mode
+    // La subscription sera nettoyée automatiquement au unmount final
   }, []);
 
   return (
