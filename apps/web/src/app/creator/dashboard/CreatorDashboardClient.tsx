@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { DollarSign, Users, TrendingUp, BookOpen, Plus, Star, Clock, Loader2 } from 'lucide-react';
 
@@ -14,7 +14,7 @@ export function CreatorDashboardClient() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { user: currentUser } = await auth.getUser();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (!currentUser) {
         router.push('/login');
