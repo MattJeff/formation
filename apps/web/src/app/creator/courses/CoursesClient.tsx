@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Plus, BookOpen, Users, Clock, TrendingUp, Edit, Eye } from 'lucide-react';
-import { authService } from '@/lib/auth';
+import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/lib/supabase-browser';
 
 interface Course {
   id: string;
@@ -28,21 +29,30 @@ export default function CoursesClient() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
 
+  const { user } = useAuth();
+  
   useEffect(() => {
-    loadCourses();
-  }, []);
+    if (user) {
+      console.log('📚 [COURSES] Chargement des cours pour:', user.email);
+      loadCourses();
+    }
+  }, [user]);
 
   const loadCourses = async () => {
     try {
       setLoading(true);
+      console.log('🔄 [COURSES] Début du chargement...');
       
-      // Récupérer le token
-      const { session } = await authService.getSession();
+      // Récupérer la session
+      const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        console.error('❌ Pas de session');
+        console.error('❌ [COURSES] Pas de session');
+        setLoading(false);
         return;
       }
+      
+      console.log('✅ [COURSES] Session OK, appel API...');
 
       // Récupérer les cours du créateur
       const response = await fetch('/api/courses/my-courses', {
