@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
+import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Upload, X, Plus, Save, ArrowRight, Loader2, Video, FileText, Link as LinkIcon, File } from 'lucide-react';
 
 type Step = 'basic' | 'curriculum' | 'pricing';
@@ -425,10 +426,20 @@ export function NewCourseClient() {
     try {
       console.log('📤 Envoi de la requête POST /api/courses (brouillon)...');
       
+      // Récupérer le token d'authentification
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        alert('❌ Vous devez être connecté pour sauvegarder un cours');
+        setSaving(false);
+        return;
+      }
+      
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -503,10 +514,20 @@ export function NewCourseClient() {
     try {
       console.log('📤 Envoi de la requête POST /api/courses...');
       
+      // Récupérer le token d'authentification
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        alert('❌ Vous devez être connecté pour publier un cours');
+        setSaving(false);
+        return;
+      }
+      
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           ...formData,

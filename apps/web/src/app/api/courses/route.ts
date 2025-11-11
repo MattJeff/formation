@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 
 // GET - Récupérer tous les cours
 export async function GET(_request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     // Récupérer les cours publiés depuis Supabase
     const { data: courses, error } = await supabase
@@ -42,7 +44,30 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { title, subtitle, description, category, level, price, comparePrice, coverImage, sections, status, requirements, learningObjectives, targetAudience } = body;
 
-    const supabase = createRouteHandlerClient({ cookies });
+    // Récupérer le token d'authentification depuis les headers
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader) {
+      console.error('❌ Pas de header Authorization');
+      return NextResponse.json(
+        { error: 'Non authentifié', details: 'Header Authorization manquant' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    );
 
     // Vérifier l'authentification
     const { data: { user }, error: userError } = await supabase.auth.getUser();
