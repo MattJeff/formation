@@ -36,9 +36,9 @@ export function Header() {
     return (
       <header className="border-b border-border bg-background">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">
+          <div className="text-xl font-bold cursor-pointer" onClick={() => router.push('/dashboard')}>
             SkillForge
-          </Link>
+          </div>
 
           <nav className="flex items-center space-x-6">
             <Link href="/courses" className="text-sm hover:text-primary">
@@ -91,9 +91,9 @@ export function Header() {
     return (
       <header className="border-b border-border bg-background">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">
+          <div className="text-xl font-bold cursor-pointer" onClick={() => router.push('/creator/dashboard')}>
             SkillForge
-          </Link>
+          </div>
 
           <nav className="flex items-center space-x-6">
             <Link href="/creator/dashboard" className="text-sm hover:text-primary">
@@ -152,9 +152,9 @@ export function Header() {
   return (
     <header className="border-b border-border bg-background">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold">
+        <div className="text-xl font-bold cursor-pointer" onClick={() => router.push('/')}>
           SkillForge
-        </Link>
+        </div>
 
         <nav className="flex items-center space-x-6">
           <Link href="/courses" className="text-sm hover:text-primary">
