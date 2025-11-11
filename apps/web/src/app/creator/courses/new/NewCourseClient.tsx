@@ -423,6 +423,8 @@ export function NewCourseClient() {
 
     setSaving(true);
     try {
+      console.log('📤 Envoi de la requête POST /api/courses (brouillon)...');
+      
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
@@ -436,16 +438,33 @@ export function NewCourseClient() {
         }),
       });
 
+      console.log('📥 Réponse reçue:', response.status, response.statusText);
+
       const data = await response.json();
+      console.log('📦 Données:', data);
+      
+      if (!response.ok) {
+        const errorMessage = `❌ ERREUR ${response.status}\n\n` +
+          `Status: ${response.statusText}\n` +
+          `Message: ${data.error || 'Erreur inconnue'}\n` +
+          `Détails: ${data.details || 'Aucun détail'}`;
+        
+        console.error(errorMessage);
+        alert(errorMessage);
+        return;
+      }
       
       if (data.success) {
         alert('✅ ' + data.message);
       } else {
-        alert('❌ Erreur lors de la sauvegarde');
+        alert('❌ Erreur lors de la sauvegarde\n\n' + (data.error || 'Erreur inconnue'));
       }
     } catch (error) {
-      console.error('Erreur:', error);
-      alert('❌ Erreur lors de la sauvegarde');
+      console.error('❌ Erreur catch:', error);
+      const errorMessage = `❌ ERREUR RÉSEAU\n\n` +
+        `Type: ${error instanceof Error ? error.name : 'Unknown'}\n` +
+        `Message: ${error instanceof Error ? error.message : String(error)}`;
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -482,6 +501,8 @@ export function NewCourseClient() {
 
     setSaving(true);
     try {
+      console.log('📤 Envoi de la requête POST /api/courses...');
+      
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
@@ -495,17 +516,35 @@ export function NewCourseClient() {
         }),
       });
 
+      console.log('📥 Réponse reçue:', response.status, response.statusText);
+
       const data = await response.json();
+      console.log('📦 Données:', data);
+      
+      if (!response.ok) {
+        // Erreur HTTP
+        const errorMessage = `❌ ERREUR ${response.status}\n\n` +
+          `Status: ${response.statusText}\n` +
+          `Message: ${data.error || 'Erreur inconnue'}\n` +
+          `Détails: ${data.details || 'Aucun détail'}`;
+        
+        console.error(errorMessage);
+        alert(errorMessage);
+        return;
+      }
       
       if (data.success) {
         alert('✅ ' + data.message);
         router.push('/creator/courses');
       } else {
-        alert('❌ Erreur lors de la publication');
+        alert('❌ Erreur lors de la publication\n\n' + (data.error || 'Erreur inconnue'));
       }
     } catch (error) {
-      console.error('Erreur:', error);
-      alert('❌ Erreur lors de la publication');
+      console.error('❌ Erreur catch:', error);
+      const errorMessage = `❌ ERREUR RÉSEAU\n\n` +
+        `Type: ${error instanceof Error ? error.name : 'Unknown'}\n` +
+        `Message: ${error instanceof Error ? error.message : String(error)}`;
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
