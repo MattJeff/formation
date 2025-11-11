@@ -26,16 +26,26 @@ export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Si pas d'utilisateur
     if (!user) {
       console.log('👤 [PROFILE] Pas d\'utilisateur');
       setProfile(null);
       setLoading(false);
+      setLoadedUserId(null);
+      return;
+    }
+
+    // Si déjà chargé pour cet utilisateur, ne pas recharger
+    if (loadedUserId === user.id) {
+      console.log('✅ [PROFILE] Déjà chargé pour:', user.id);
       return;
     }
 
     console.log('👤 [PROFILE] Chargement pour:', user.id);
+    setLoading(true);
 
     supabase
       .from('profiles')
@@ -48,13 +58,14 @@ export function useProfile() {
           setError(error.message);
           setProfile(null);
         } else {
-          console.log('✅ [PROFILE] Chargé:', data.role);
+          console.log('✅ [PROFILE] Chargé:', data?.role || 'pas de rôle');
           setProfile(data);
           setError(null);
         }
         setLoading(false);
+        setLoadedUserId(user.id);
       });
-  }, [user]);
+  }, [user?.id, loadedUserId]);
 
   return { profile, loading, error };
 }
