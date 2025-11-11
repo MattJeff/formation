@@ -421,6 +421,8 @@ model ProjectSubmission {
   id          String   @id @default(cuid())
   sessionId   String
   session     SandboxSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   // Résultats des tests
   status      SubmissionStatus
@@ -430,6 +432,7 @@ model ProjectSubmission {
   createdAt   DateTime @default(now())
   
   @@index([sessionId])
+  @@index([projectId])
 }
 
 // ===================================
