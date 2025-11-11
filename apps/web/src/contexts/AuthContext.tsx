@@ -85,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isCreator: profile?.role === 'creator',
     isLearner: profile?.role === 'learner',
     signOut,
-    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
