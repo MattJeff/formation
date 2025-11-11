@@ -1,32 +1,25 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { BookOpen, Trophy, Target, TrendingUp, Loader2 } from 'lucide-react';
 
 export function DashboardClient() {
-  const router = useRouter();
   const { isAuthenticated, isCreator, loading, profile } = useAuth();
 
-  useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated) {
-        router.replace('/login');
-      } else if (isCreator) {
-        router.replace('/creator/dashboard');
-      }
-    }
-  }, [loading, isAuthenticated, isCreator, router]);
-
+  // Afficher le loader pendant le chargement
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Si pas authentifié ou creator, ne rien afficher (le Header gère la redirection)
+  if (!isAuthenticated || isCreator) {
+    return null;
   }
 
   const stats = [
