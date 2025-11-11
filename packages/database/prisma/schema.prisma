@@ -1,0 +1,532 @@
+// SkillForge Database Schema
+// Générateur et source de données
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================
+// UTILISATEURS & AUTHENTIFICATION
+// ===================================
+
+enum UserRole {
+  LEARNER    // Apprenant
+  CREATOR    // Créateur de contenu
+  ADMIN      // Administrateur
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM    // 29€/mois pour les apprenants
+  CREATOR_FREE
+  CREATOR_PRO      // 19€/mois
+  CREATOR_ACADEMY  // 99€/mois
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  passwordHash  String?  // Null si OAuth uniquement
+  firstName     String?
+  lastName      String?
+  avatar        String?
+  bio           String?
+  role          UserRole @default(LEARNER)
+  
+  // Abonnement
+  subscriptionTier   SubscriptionTier @default(FREE)
+  subscriptionStatus String?          // active, canceled, past_due
+  stripeCustomerId   String?          @unique
+  
+  // OAuth
+  googleId      String?  @unique
+  githubId      String?  @unique
+  linkedinId    String?  @unique
+  
+  // Métadonnées
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  
+  // Relations
+  enrollments        Enrollment[]
+  createdCourses     Course[]
+  projects           Project[]
+  sandboxSessions    SandboxSession[]
+  messages           Message[]
+  forumPosts         ForumPost[]
+  forumComments      ForumComment[]
+  achievements       UserAchievement[]
+  portfolioItems     PortfolioItem[]
+  creatorProfile     CreatorProfile?
+  
+  @@index([email])
+  @@index([username])
+}
+
+model CreatorProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Informations professionnelles
+  displayName String
+  tagline     String?
+  website     String?
+  twitter     String?
+  linkedin    String?
+  github      String?
+  
+  // Paiements
+  stripeAccountId String?  @unique
+  payoutEnabled   Boolean  @default(false)
+  
+  // Statistiques
+  totalRevenue    Float    @default(0)
+  totalStudents   Int      @default(0)
+  averageRating   Float?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ===================================
+// COURS & CONTENU
+// ===================================
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum CourseStatus {
+  DRAFT
+  UNDER_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  thumbnail   String?
+  
+  // Métadonnées
+  level       CourseLevel
+  status      CourseStatus @default(DRAFT)
+  language    String       @default("fr")
+  duration    Int?         // En minutes
+  
+  // Pricing
+  price       Float        @default(0)
+  currency    String       @default("EUR")
+  
+  // Relations
+  creatorId   String
+  creator     User         @relation(fields: [creatorId], references: [id])
+  categoryId  String?
+  category    Category?    @relation(fields: [categoryId], references: [id])
+  
+  modules     Module[]
+  enrollments Enrollment[]
+  reviews     Review[]
+  tags        CourseTag[]
+  
+  // Statistiques
+  enrollmentCount Int      @default(0)
+  averageRating   Float?
+  totalRevenue    Float    @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  @@index([slug])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  
+  courses     Course[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model CourseTag {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name     String
+  
+  @@unique([courseId, name])
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  order       Int
+  
+  lessons     Lesson[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([courseId])
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+  QUIZ
+  PROJECT
+  SANDBOX
+}
+
+model Lesson {
+  id          String     @id @default(cuid())
+  moduleId    String
+  module      Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  type        LessonType
+  order       Int
+  
+  // Contenu
+  videoUrl    String?    // URL Mux
+  content     String?    // Markdown pour les leçons texte
+  duration    Int?       // En secondes
+  
+  // Projet/Sandbox
+  projectId   String?    @unique
+  project     Project?   @relation(fields: [projectId], references: [id])
+  
+  progress    LessonProgress[]
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  @@index([moduleId])
+}
+
+// ===================================
+// INSCRIPTIONS & PROGRESSION
+// ===================================
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Paiement
+  stripePaymentId String?
+  pricePaid       Float
+  
+  // Progression
+  progress        Float    @default(0) // 0-100
+  completedAt     DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  completed   Boolean  @default(false)
+  timeSpent   Int      @default(0) // En secondes
+  lastPosition Int?    // Pour les vidéos
+  
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId      String
+  
+  rating      Int      // 1-5
+  comment     String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([courseId, userId])
+  @@index([courseId])
+}
+
+// ===================================
+// PROJETS & SANDBOX
+// ===================================
+
+enum ProjectDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  difficulty  ProjectDifficulty
+  
+  // Configuration du projet
+  boilerplateRepo String?  // URL du repo Git de démarrage
+  testSuiteUrl    String?  // URL des tests Playwright
+  
+  // Scénario du Client IA
+  clientName      String   // Ex: "Chloé Dubois"
+  clientAvatar    String?
+  initialBrief    String   // Brief initial en Markdown
+  
+  // Relations
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id])
+  
+  lesson          Lesson?
+  objectives      ProjectObjective[]
+  scenarios       ProjectScenario[]
+  sandboxSessions SandboxSession[]
+  submissions     ProjectSubmission[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([creatorId])
+}
+
+model ProjectObjective {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  text        String
+  testId      String  // ID du test Playwright correspondant
+  order       Int
+  
+  @@index([projectId])
+}
+
+model ProjectScenario {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Logique du scénario
+  triggerCondition String  // JSON: conditions pour déclencher ce scénario
+  aiResponse       String  // Template de réponse de l'IA
+  nextObjectives   String? // JSON: nouveaux objectifs à débloquer
+  
+  order       Int
+  
+  @@index([projectId])
+}
+
+enum SandboxStatus {
+  PROVISIONING
+  ACTIVE
+  SLEEPING
+  TERMINATED
+}
+
+model SandboxSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  
+  // Infrastructure
+  containerId String?  @unique
+  workspaceUrl String?
+  status      SandboxStatus @default(PROVISIONING)
+  
+  // Progression
+  currentState String   @default("INITIAL") // State machine
+  
+  messages    Message[]
+  submissions ProjectSubmission[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastActiveAt DateTime @default(now())
+  terminatedAt DateTime?
+  
+  @@index([userId])
+  @@index([projectId])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     SandboxSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  senderId    String
+  sender      User     @relation(fields: [senderId], references: [id])
+  
+  content     String
+  isAI        Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([sessionId])
+}
+
+enum SubmissionStatus {
+  PENDING
+  ANALYZING
+  PASSED
+  FAILED
+}
+
+model ProjectSubmission {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     SandboxSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Résultats des tests
+  status      SubmissionStatus
+  testResults String   // JSON: résultats détaillés
+  feedback    String?  // Feedback généré par l'IA
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([sessionId])
+}
+
+// ===================================
+// PORTFOLIO & ACHIEVEMENTS
+// ===================================
+
+model PortfolioItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String
+  projectType String   // "web", "mobile", "data", etc.
+  
+  // Liens
+  liveUrl     String?
+  repoUrl     String?
+  thumbnails  String[] // Array d'URLs
+  
+  // Compétences démontrées
+  skills      String[] // Array de compétences
+  
+  // Preuve de compétence
+  verificationReport String? // JSON du rapport de performance
+  
+  featured    Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String
+  category    String   // "completion", "quality", "community", etc.
+  
+  users       UserAchievement[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  
+  earnedAt      DateTime @default(now())
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// ===================================
+// COMMUNAUTÉ
+// ===================================
+
+model ForumPost {
+  id          String   @id @default(cuid())
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  title       String
+  content     String
+  category    String
+  
+  upvotes     Int      @default(0)
+  viewCount   Int      @default(0)
+  
+  comments    ForumComment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([authorId])
+  @@index([category])
+}
+
+model ForumComment {
+  id          String   @id @default(cuid())
+  postId      String
+  post        ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  content     String
+  upvotes     Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([postId])
+  @@index([authorId])
+}
