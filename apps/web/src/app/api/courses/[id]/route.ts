@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 // GET - Récupérer un cours spécifique
 export async function GET(
@@ -44,6 +45,7 @@ export async function PUT(
     const body = await request.json();
 
     // Récupérer l'utilisateur connecté
+    const supabase = createRouteHandlerClient({ cookies });
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
@@ -77,6 +79,7 @@ export async function DELETE(
     const { id } = params;
 
     // Récupérer l'utilisateur connecté
+    const supabase = createRouteHandlerClient({ cookies });
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

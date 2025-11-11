@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 // GET - Récupérer tous les cours
 export async function GET(request: Request) {
@@ -42,12 +43,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { title, subtitle, description, category, level, price, comparePrice, coverImage, sections, status } = body;
 
-    // Récupérer l'utilisateur connecté
+    // Récupérer l'utilisateur connecté avec les cookies
+    const supabase = createRouteHandlerClient({ cookies });
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
+      console.error('Erreur auth:', userError);
       return NextResponse.json(
-        { error: 'Non authentifié' },
+        { error: 'Non authentifié', details: userError?.message },
         { status: 401 }
       );
     }
