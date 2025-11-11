@@ -20,13 +20,18 @@ export function Header() {
         setUser(currentUser);
         
         // Récupérer le rôle depuis la table profiles
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', currentUser.id)
           .single();
         
-        if (profile) {
+        if (error) {
+          console.error('❌ Erreur récupération profil:', error);
+          // Fallback: utiliser le rôle des métadonnées si la table n'existe pas
+          const roleFromMetadata = currentUser.user_metadata?.role || 'learner';
+          setRole(roleFromMetadata as 'learner' | 'creator');
+        } else if (profile) {
           setRole(profile.role as 'learner' | 'creator');
         }
       }
@@ -40,13 +45,18 @@ export function Header() {
         setUser(session.user);
         
         // Récupérer le rôle
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
           .single();
         
-        if (profile) {
+        if (error) {
+          console.error('❌ Erreur récupération profil:', error);
+          // Fallback
+          const roleFromMetadata = session.user.user_metadata?.role || 'learner';
+          setRole(roleFromMetadata as 'learner' | 'creator');
+        } else if (profile) {
           setRole(profile.role as 'learner' | 'creator');
         }
       } else {
