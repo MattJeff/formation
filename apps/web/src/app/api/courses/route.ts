@@ -81,29 +81,46 @@ export async function POST(request: Request) {
     }
 
     console.log('✅ Utilisateur authentifié:', user.id);
+    console.log('👤 User metadata:', user.user_metadata);
 
     // Vérifier que l'utilisateur est un creator
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
+    // Prioriser user_metadata qui est plus à jour que la table profiles
+    const roleFromMetadata = user.user_metadata?.role;
 
-    if (profileError) {
-      console.error('❌ Erreur profil:', profileError);
-      // Si le profil n'existe pas, utiliser les métadonnées
-      const roleFromMetadata = user.user_metadata?.role || 'learner';
+    if (roleFromMetadata) {
+      // Si on a un rôle dans metadata, l'utiliser
+      console.log('✅ Rôle depuis metadata:', roleFromMetadata);
       if (roleFromMetadata !== 'creator') {
+        console.error('❌ Rôle non autorisé:', roleFromMetadata);
         return NextResponse.json(
           { error: 'Seuls les créateurs peuvent créer des cours' },
           { status: 403 }
         );
       }
-    } else if (profile?.role !== 'creator') {
-      return NextResponse.json(
-        { error: 'Seuls les créateurs peuvent créer des cours' },
-        { status: 403 }
-      );
+    } else {
+      // Sinon, fallback sur la table profiles
+      console.log('⚠️ Pas de rôle dans metadata, vérification table profiles');
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('❌ Erreur profil:', profileError);
+        return NextResponse.json(
+          { error: 'Seuls les créateurs peuvent créer des cours' },
+          { status: 403 }
+        );
+      }
+
+      if (profile.role !== 'creator') {
+        console.error('❌ Rôle non autorisé depuis DB:', profile.role);
+        return NextResponse.json(
+          { error: 'Seuls les créateurs peuvent créer des cours' },
+          { status: 403 }
+        );
+      }
     }
 
     console.log('✅ Création de cours pour:', user.id);

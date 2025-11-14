@@ -40,6 +40,7 @@ export function SettingsClient() {
     setMessage(null);
 
     try {
+      // 1. Mettre à jour le rôle dans user_metadata
       const { error } = await supabase.auth.updateUser({
         data: {
           role: newRole,
@@ -52,29 +53,38 @@ export function SettingsClient() {
         return;
       }
 
-      setMessage({ 
-        type: 'success', 
-        text: `Rôle changé avec succès ! Redirection vers votre nouveau dashboard...` 
+      // 2. Mettre à jour le rôle dans la table profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Erreur mise à jour profil:', profileError);
+        // Continue même si la table profiles n'existe pas encore
+      }
+
+      // 3. Rafraîchir la session pour obtenir les nouvelles metadata
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+
+      if (refreshError) {
+        console.error('Erreur refresh session:', refreshError);
+      }
+
+      setMessage({
+        type: 'success',
+        text: `Rôle changé avec succès ! Redirection vers votre nouveau dashboard...`
       });
 
-      // Mettre à jour l'utilisateur local
-      setUser({
-        ...user,
-        user_metadata: {
-          ...user.user_metadata,
-          role: newRole,
-        },
-      });
-
-      // Rediriger après 2 secondes
+      // 3. Rediriger après 1.5 secondes (la session sera mise à jour par AuthProvider)
       setTimeout(() => {
         if (newRole === 'creator') {
           router.push('/creator/dashboard');
         } else {
           router.push('/dashboard');
         }
-        router.refresh();
-      }, 2000);
+        window.location.reload(); // Force le reload pour rafraîchir complètement
+      }, 1500);
     } catch (error: any) {
       setMessage({ type: 'error', text: 'Une erreur est survenue' });
       setChangingRole(false);
