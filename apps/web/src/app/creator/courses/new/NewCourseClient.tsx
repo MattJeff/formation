@@ -545,6 +545,26 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
     return errors;
   };
 
+  const prepareSectionsForSave = () => {
+    // Préparer les sections en nettoyant les objets File
+    return sections.map(section => ({
+      id: section.id,
+      title: section.title,
+      lessons: section.lessons.map(lesson => ({
+        id: lesson.id,
+        title: lesson.title,
+        type: lesson.type,
+        duration: lesson.duration,
+        description: lesson.description,
+        content: lesson.content,
+        // Pour les fichiers uploadés, on utilise l'URL existante si disponible
+        // TODO: Implémenter l'upload vers Supabase Storage pour les nouveaux fichiers
+        file_url: lesson.fileUrl || (lesson.file ? `temp-${lesson.file.name}` : ''),
+        video_url: lesson.type === 'video' ? (lesson.content || lesson.fileUrl) : '',
+      }))
+    }));
+  };
+
   const handleSaveDraft = async () => {
     // Validation minimale pour brouillon
     if (!formData.title.trim()) {
@@ -576,6 +596,9 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         return;
       }
 
+      // Préparer les sections pour l'envoi
+      const preparedSections = prepareSectionsForSave();
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -584,7 +607,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         },
         body: JSON.stringify({
           ...formData,
-          sections,
+          sections: preparedSections,
           coverImage: imagePreview,
           status: 'draft',
         }),
@@ -671,6 +694,9 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         return;
       }
 
+      // Préparer les sections pour l'envoi
+      const preparedSections = prepareSectionsForSave();
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -679,7 +705,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         },
         body: JSON.stringify({
           ...formData,
-          sections,
+          sections: preparedSections,
           coverImage: imagePreview,
           status: 'published',
         }),

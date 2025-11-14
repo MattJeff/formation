@@ -179,6 +179,10 @@ export async function POST(request: Request) {
                 type: lesson.type,
                 duration: parseInt(lesson.duration) || 0,
                 order_index: section.lessons.indexOf(lesson),
+                description: lesson.description || null,
+                content: lesson.content || null,
+                video_url: lesson.video_url || lesson.content || null,
+                file_url: lesson.file_url || lesson.fileUrl || null,
               });
           }
         }
