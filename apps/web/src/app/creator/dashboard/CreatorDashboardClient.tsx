@@ -10,13 +10,15 @@ import { DollarSign, Users, TrendingUp, BookOpen, Plus, Star, Clock, Loader2 } f
 export function CreatorDashboardClient() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      if (!currentUser) {
+      const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+
+      if (error || !currentUser) {
         router.push('/login');
         return;
       }
@@ -29,10 +31,49 @@ export function CreatorDashboardClient() {
 
       setUser(currentUser);
       setLoading(false);
+
+      // Charger les cours du créateur
+      loadCourses(currentUser);
     };
 
     checkAuth();
   }, [router]);
+
+  const loadCourses = async (currentUser: any) => {
+    console.log('📚 [COURSES] Chargement des cours pour:', currentUser.email);
+    setLoadingCourses(true);
+    console.log('🔄 [COURSES] Début du chargement...');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        console.error('❌ [COURSES] Pas de session');
+        return;
+      }
+
+      console.log('✅ [COURSES] Session OK, appel API...');
+
+      const response = await fetch('/api/courses/my-courses', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.courses) {
+        console.log('✅ Cours récupérés:', data.courses);
+        setCourses(data.courses);
+      } else {
+        console.error('❌ Erreur récupération cours:', data);
+      }
+    } catch (error) {
+      console.error('❌ Erreur:', error);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -170,27 +211,78 @@ export function CreatorDashboardClient() {
         <div className="rounded-lg border border-border bg-card p-8">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold">Vos cours</h2>
-            <Link href="/creator/courses" className="text-sm text-primary hover:underline">
-              Voir tout
-            </Link>
+            {courses.length > 0 && (
+              <Link href="/creator/courses" className="text-sm text-primary hover:underline">
+                Voir tout
+              </Link>
+            )}
           </div>
-          
-          <div className="text-center py-12">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <BookOpen className="h-8 w-8 text-primary" />
+
+          {loadingCourses ? (
+            <div className="py-12 text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+              <p className="mt-4 text-muted-foreground">Chargement des cours...</p>
             </div>
-            <h3 className="mb-2 text-lg font-semibold">Aucun cours pour le moment</h3>
-            <p className="mb-6 text-muted-foreground">
-              Créez votre premier cours et commencez à partager vos connaissances
-            </p>
-            <Link
-              href="/creator/courses/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="h-5 w-5" />
-              Créer mon premier cours
-            </Link>
-          </div>
+          ) : courses.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <BookOpen className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">Aucun cours pour le moment</h3>
+              <p className="mb-6 text-muted-foreground">
+                Créez votre premier cours et commencez à partager vos connaissances
+              </p>
+              <Link
+                href="/creator/courses/new"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-5 w-5" />
+                Créer mon premier cours
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {courses.slice(0, 3).map((course) => (
+                <Link
+                  key={course.id}
+                  href={`/creator/courses/${course.id}/edit`}
+                  className="group overflow-hidden rounded-lg border border-border transition-all hover:border-primary hover:shadow-lg"
+                >
+                  <div className="aspect-video overflow-hidden bg-secondary">
+                    {course.cover_image ? (
+                      <img
+                        src={course.cover_image}
+                        alt={course.title}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${
+                        course.status === 'published'
+                          ? 'bg-green-500/10 text-green-500'
+                          : 'bg-yellow-500/10 text-yellow-500'
+                      }`}>
+                        {course.status === 'published' ? 'Publié' : 'Brouillon'}
+                      </span>
+                      <span className="text-sm font-semibold">{course.price}€</span>
+                    </div>
+                    <h3 className="mb-2 font-semibold group-hover:text-primary line-clamp-2">
+                      {course.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {course.subtitle || course.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Statistiques récentes */}
