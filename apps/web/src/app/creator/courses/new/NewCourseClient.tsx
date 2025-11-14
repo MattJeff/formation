@@ -545,24 +545,98 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
     return errors;
   };
 
-  const prepareSectionsForSave = () => {
-    // Préparer les sections en nettoyant les objets File
-    return sections.map(section => ({
-      id: section.id,
-      title: section.title,
-      lessons: section.lessons.map(lesson => ({
-        id: lesson.id,
-        title: lesson.title,
-        type: lesson.type,
-        duration: lesson.duration,
-        description: lesson.description,
-        content: lesson.content,
-        // Pour les fichiers uploadés, on utilise l'URL existante si disponible
-        // TODO: Implémenter l'upload vers Supabase Storage pour les nouveaux fichiers
-        file_url: lesson.fileUrl || (lesson.file ? `temp-${lesson.file.name}` : ''),
-        video_url: lesson.type === 'video' ? (lesson.content || lesson.fileUrl) : '',
-      }))
-    }));
+  const uploadFileToStorage = async (file: File, bucket: 'images' | 'videos' | 'pdfs'): Promise<string | null> => {
+    try {
+      // Générer un nom de fichier unique
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(7);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${timestamp}-${randomStr}.${fileExt}`;
+
+      console.log(`📤 Upload de ${file.name} vers bucket ${bucket}...`);
+
+      // Upload vers Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error(`❌ Erreur upload ${bucket}:`, error);
+        return null;
+      }
+
+      // Récupérer l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      console.log(`✅ Fichier uploadé: ${publicUrl}`);
+      return publicUrl;
+    } catch (error) {
+      console.error('❌ Erreur upload:', error);
+      return null;
+    }
+  };
+
+  const prepareSectionsForSave = async () => {
+    // Préparer les sections en uploadant les fichiers et en nettoyant les objets File
+    const preparedSections = [];
+
+    for (const section of sections) {
+      const preparedLessons = [];
+
+      for (const lesson of section.lessons) {
+        let fileUrl = lesson.fileUrl || '';
+        let videoUrl = lesson.content || '';
+
+        // Si un nouveau fichier a été uploadé
+        if (lesson.file) {
+          let uploadedUrl: string | null = null;
+
+          // Déterminer le bucket selon le type de leçon
+          if (lesson.type === 'video') {
+            uploadedUrl = await uploadFileToStorage(lesson.file, 'videos');
+            if (uploadedUrl) {
+              videoUrl = uploadedUrl;
+              fileUrl = uploadedUrl;
+            }
+          } else if (lesson.type === 'pdf') {
+            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdfs');
+            if (uploadedUrl) {
+              fileUrl = uploadedUrl;
+            }
+          } else if (lesson.type === 'file') {
+            // Pour les fichiers génériques, on peut utiliser pdfs ou créer un bucket files
+            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdfs');
+            if (uploadedUrl) {
+              fileUrl = uploadedUrl;
+            }
+          }
+        }
+
+        preparedLessons.push({
+          id: lesson.id,
+          title: lesson.title,
+          type: lesson.type,
+          duration: lesson.duration,
+          description: lesson.description,
+          content: lesson.type === 'video' ? videoUrl : lesson.content,
+          file_url: fileUrl,
+          video_url: lesson.type === 'video' ? videoUrl : '',
+        });
+      }
+
+      preparedSections.push({
+        id: section.id,
+        title: section.title,
+        lessons: preparedLessons,
+      });
+    }
+
+    return preparedSections;
   };
 
   const handleSaveDraft = async () => {
@@ -596,8 +670,25 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         return;
       }
 
-      // Préparer les sections pour l'envoi
-      const preparedSections = prepareSectionsForSave();
+      // Uploader l'image de couverture si c'est un nouveau fichier
+      let coverImageUrl = imagePreview;
+      if (coverImage) {
+        console.log('📤 Upload de l\'image de couverture...');
+        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'images');
+        if (uploadedImageUrl) {
+          coverImageUrl = uploadedImageUrl;
+          setImagePreview(uploadedImageUrl);
+          setCoverImage(null); // Réinitialiser après upload
+        } else {
+          alert('❌ Erreur lors de l\'upload de l\'image de couverture');
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Préparer les sections pour l'envoi (upload des fichiers)
+      console.log('📤 Upload des fichiers des leçons...');
+      const preparedSections = await prepareSectionsForSave();
 
       const response = await fetch(url, {
         method,
@@ -608,7 +699,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         body: JSON.stringify({
           ...formData,
           sections: preparedSections,
-          coverImage: imagePreview,
+          coverImage: coverImageUrl,
           status: 'draft',
         }),
       });
@@ -694,8 +785,25 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         return;
       }
 
-      // Préparer les sections pour l'envoi
-      const preparedSections = prepareSectionsForSave();
+      // Uploader l'image de couverture si c'est un nouveau fichier
+      let coverImageUrl = imagePreview;
+      if (coverImage) {
+        console.log('📤 Upload de l\'image de couverture...');
+        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'images');
+        if (uploadedImageUrl) {
+          coverImageUrl = uploadedImageUrl;
+          setImagePreview(uploadedImageUrl);
+          setCoverImage(null); // Réinitialiser après upload
+        } else {
+          alert('❌ Erreur lors de l\'upload de l\'image de couverture');
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Préparer les sections pour l'envoi (upload des fichiers)
+      console.log('📤 Upload des fichiers des leçons...');
+      const preparedSections = await prepareSectionsForSave();
 
       const response = await fetch(url, {
         method,
@@ -706,7 +814,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         body: JSON.stringify({
           ...formData,
           sections: preparedSections,
-          coverImage: imagePreview,
+          coverImage: coverImageUrl,
           status: 'published',
         }),
       });
