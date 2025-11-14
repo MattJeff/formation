@@ -22,7 +22,8 @@ interface Lesson {
   duration: string;
   description?: string;
   content?: string;
-  file?: any;
+  file?: File | null;
+  fileUrl?: string; // URL du fichier existant en mode édition
 }
 
 // Composant pour éditer une leçon
@@ -34,13 +35,17 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
   onDelete: (sectionId: string, lessonId: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
     if (uploadedFile) {
-      setFile(uploadedFile);
+      onUpdate(sectionId, lesson.id, 'file', uploadedFile);
     }
+  };
+
+  const removeFile = () => {
+    onUpdate(sectionId, lesson.id, 'file', null);
+    onUpdate(sectionId, lesson.id, 'fileUrl', '');
   };
 
   if (!isExpanded) {
@@ -164,16 +169,31 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
         {lesson.type === 'video' && (
           <div>
             <label className="mb-2 block text-sm font-medium">Vidéo</label>
-            {file ? (
+            {lesson.file ? (
               <div className="flex items-center gap-3 rounded-lg border border-border p-4">
                 <Video className="h-8 w-8 text-blue-500" />
                 <div className="flex-1">
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="font-medium">{lesson.file.name}</p>
+                  <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setFile(null)}
+                  onClick={removeFile}
+                  className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : lesson.fileUrl ? (
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                <Video className="h-8 w-8 text-blue-500" />
+                <div className="flex-1">
+                  <p className="font-medium">Vidéo existante</p>
+                  <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeFile}
                   className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground"
                 >
                   <X className="h-4 w-4" />
@@ -215,14 +235,25 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
         {lesson.type === 'pdf' && (
           <div>
             <label className="mb-2 block text-sm font-medium">Document PDF</label>
-            {file ? (
+            {lesson.file ? (
               <div className="flex items-center gap-3 rounded-lg border border-border p-4">
                 <FileText className="h-8 w-8 text-red-500" />
                 <div className="flex-1">
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="font-medium">{lesson.file.name}</p>
+                  <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
-                <button type="button" onClick={() => setFile(null)} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : lesson.fileUrl ? (
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                <FileText className="h-8 w-8 text-red-500" />
+                <div className="flex-1">
+                  <p className="font-medium">PDF existant</p>
+                  <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                </div>
+                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -252,14 +283,25 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
         {lesson.type === 'file' && (
           <div>
             <label className="mb-2 block text-sm font-medium">Fichier</label>
-            {file ? (
+            {lesson.file ? (
               <div className="flex items-center gap-3 rounded-lg border border-border p-4">
                 <File className="h-8 w-8 text-blue-500" />
                 <div className="flex-1">
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="font-medium">{lesson.file.name}</p>
+                  <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
-                <button type="button" onClick={() => setFile(null)} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : lesson.fileUrl ? (
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                <File className="h-8 w-8 text-blue-500" />
+                <div className="flex-1">
+                  <p className="font-medium">Fichier existant</p>
+                  <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                </div>
+                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -369,7 +411,9 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
               type: l.type,
               duration: l.duration?.toString() || '0',
               description: l.description || '',
-              content: l.content || l.video_url || l.file_url || '',
+              content: l.content || l.video_url || '',
+              fileUrl: l.file_url || l.video_url || '',
+              file: null,
             }))
           })));
         }
@@ -442,6 +486,8 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
           title: `Leçon ${s.lessons.length + 1}`,
           type: 'video',
           duration: '5:00',
+          file: null,
+          fileUrl: '',
         };
         return { ...s, lessons: [...s.lessons, newLesson] };
       }
@@ -449,12 +495,12 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
     }));
   };
 
-  const updateLesson = (sectionId: string, lessonId: string, field: string, value: string) => {
+  const updateLesson = (sectionId: string, lessonId: string, field: string, value: any) => {
     setSections(sections.map(s => {
       if (s.id === sectionId) {
         return {
           ...s,
-          lessons: s.lessons.map(l => 
+          lessons: s.lessons.map(l =>
             l.id === lessonId ? { ...l, [field]: value } : l
           ),
         };
@@ -664,7 +710,9 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
   const canGoToNextStep = () => {
     if (currentStep === 'basic') {
-      return formData.title && formData.description && coverImage;
+      // En mode édition, on accepte imagePreview, en mode création on vérifie coverImage
+      const hasImage = mode === 'edit' ? (coverImage || imagePreview) : coverImage;
+      return formData.title && formData.description && hasImage;
     }
     if (currentStep === 'curriculum') {
       return sections.some(s => s.lessons.length > 0);
