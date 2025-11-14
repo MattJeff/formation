@@ -49,6 +49,8 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
   };
 
   if (!isExpanded) {
+    const hasFile = lesson.file || lesson.fileUrl;
+
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border p-3 hover:bg-accent">
         <span className="text-xs text-muted-foreground">{lessonIndex + 1}</span>
@@ -66,6 +68,11 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
           className="flex-1 bg-transparent px-2 py-1 text-sm outline-none"
           placeholder="Titre de la leçon"
         />
+        {hasFile && (
+          <span className="rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-500">
+            Fichier
+          </span>
+        )}
         <select
           value={lesson.type}
           onChange={(e) => onUpdate(sectionId, lesson.id, 'type', e.target.value)}
@@ -523,14 +530,18 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
   const validateCourse = () => {
     const errors = [];
-    
+
     if (!formData.title.trim()) errors.push('Le titre est requis');
     if (formData.title.length < 10) errors.push('Le titre doit faire au moins 10 caractères');
     if (!formData.description.trim()) errors.push('La description est requise');
     if (formData.description.length < 50) errors.push('La description doit faire au moins 50 caractères');
-    if (!coverImage) errors.push('L\'image de couverture est requise');
+
+    // En mode édition, accepter l'image existante (imagePreview) ou une nouvelle (coverImage)
+    const hasValidImage = mode === 'edit' ? (coverImage || imagePreview) : coverImage;
+    if (!hasValidImage) errors.push('L\'image de couverture est requise');
+
     if (!formData.category) errors.push('La catégorie est requise');
-    
+
     return errors;
   };
 
