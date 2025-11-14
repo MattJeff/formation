@@ -24,6 +24,9 @@ interface Lesson {
   type: 'video' | 'text' | 'quiz' | 'pdf';
   duration: number;
   order_index: number;
+  video_url?: string;
+  content?: string;
+  file_url?: string;
 }
 
 export function EditCoursePage({ courseId }: EditCoursePageProps) {
@@ -57,7 +60,10 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
               title: l.title,
               type: l.type,
               duration: l.duration,
-              order_index: lIdx
+              order_index: lIdx,
+              video_url: l.video_url || '',
+              content: l.content || '',
+              file_url: l.file_url || ''
             }))
           })));
           // Expand all sections by default
@@ -115,7 +121,10 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
       title: '',
       type: 'video',
       duration: 0,
-      order_index: newSections[sectionIndex].lessons.length
+      order_index: newSections[sectionIndex].lessons.length,
+      video_url: '',
+      content: '',
+      file_url: ''
     });
     setSections(newSections);
   };
@@ -157,7 +166,10 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
             title: lesson.title,
             type: lesson.type,
             duration: parseInt(lesson.duration as any) || 0,
-            order_index: lIdx
+            order_index: lIdx,
+            video_url: lesson.video_url || null,
+            content: lesson.content || null,
+            file_url: lesson.file_url || null
           }))
         }))
       };
@@ -249,9 +261,18 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
           Retour au dashboard
         </Link>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Modifier le cours</h1>
-          <p className="text-muted-foreground">Modifiez les informations de votre cours</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Modifier le cours</h1>
+            <p className="text-muted-foreground">Modifiez les informations de votre cours</p>
+          </div>
+          <Link
+            href={`/courses/${courseId}`}
+            target="_blank"
+            className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20"
+          >
+            👁️ Prévisualiser
+          </Link>
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
@@ -460,46 +481,90 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
                             Aucune leçon. Cliquez sur "Ajouter une leçon".
                           </p>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {section.lessons.map((lesson, lessonIndex) => (
-                              <div key={lessonIndex} className="flex items-start gap-2 rounded-lg border border-border bg-background p-3">
-                                <span className="mt-2 text-xs text-muted-foreground">{lessonIndex + 1}</span>
-                                <div className="flex-1 space-y-2">
-                                  <input
-                                    type="text"
-                                    value={lesson.title}
-                                    onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'title', e.target.value)}
-                                    placeholder="Titre de la leçon"
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                  />
-                                  <div className="flex gap-2">
-                                    <select
-                                      value={lesson.type}
-                                      onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'type', e.target.value)}
-                                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    >
-                                      <option value="video">Vidéo</option>
-                                      <option value="text">Texte</option>
-                                      <option value="quiz">Quiz</option>
-                                      <option value="pdf">PDF</option>
-                                    </select>
-                                    <input
-                                      type="number"
-                                      value={lesson.duration}
-                                      onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'duration', e.target.value)}
-                                      placeholder="Durée (min)"
-                                      className="w-32 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                      min="0"
-                                    />
+                              <div key={lessonIndex} className="rounded-lg border border-border bg-background p-4">
+                                <div className="flex items-start gap-2">
+                                  <span className="mt-2 text-xs font-medium text-muted-foreground">#{lessonIndex + 1}</span>
+                                  <div className="flex-1 space-y-3">
+                                    {/* Titre et Type */}
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={lesson.title}
+                                        onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'title', e.target.value)}
+                                        placeholder="Titre de la leçon"
+                                        className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      />
+                                      <select
+                                        value={lesson.type}
+                                        onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'type', e.target.value)}
+                                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      >
+                                        <option value="video">🎥 Vidéo</option>
+                                        <option value="text">📝 Texte</option>
+                                        <option value="quiz">❓ Quiz</option>
+                                        <option value="pdf">📄 PDF</option>
+                                      </select>
+                                      <input
+                                        type="number"
+                                        value={lesson.duration}
+                                        onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'duration', e.target.value)}
+                                        placeholder="Durée (min)"
+                                        className="w-28 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                        min="0"
+                                      />
+                                    </div>
+
+                                    {/* Contenu selon le type */}
+                                    {lesson.type === 'video' && (
+                                      <input
+                                        type="url"
+                                        value={lesson.video_url || ''}
+                                        onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'video_url', e.target.value)}
+                                        placeholder="URL de la vidéo (YouTube, Vimeo, etc.)"
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      />
+                                    )}
+
+                                    {lesson.type === 'pdf' && (
+                                      <input
+                                        type="url"
+                                        value={lesson.file_url || ''}
+                                        onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'file_url', e.target.value)}
+                                        placeholder="URL du fichier PDF"
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      />
+                                    )}
+
+                                    {lesson.type === 'text' && (
+                                      <textarea
+                                        value={lesson.content || ''}
+                                        onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'content', e.target.value)}
+                                        placeholder="Contenu de la leçon (supporte Markdown)"
+                                        rows={4}
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      />
+                                    )}
+
+                                    {lesson.type === 'quiz' && (
+                                      <textarea
+                                        value={lesson.content || ''}
+                                        onChange={(e) => updateLesson(sectionIndex, lessonIndex, 'content', e.target.value)}
+                                        placeholder="Questions du quiz (format JSON)"
+                                        rows={4}
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                                      />
+                                    )}
                                   </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeLesson(sectionIndex, lessonIndex)}
+                                    className="mt-2 flex h-8 w-8 items-center justify-center rounded text-destructive hover:bg-destructive/10"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeLesson(sectionIndex, lessonIndex)}
-                                  className="mt-2 flex h-6 w-6 items-center justify-center rounded text-destructive hover:bg-destructive/10"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
                               </div>
                             ))}
                           </div>
