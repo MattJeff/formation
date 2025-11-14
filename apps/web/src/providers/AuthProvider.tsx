@@ -31,7 +31,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false); // false au départ
+  const [loading, setLoading] = useState(true); // true au départ pour charger la session
   const initializedRef = useRef(false);
 
   useEffect(() => {
@@ -41,18 +41,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log('🔐 [AUTH] Initialisation (onAuthStateChange uniquement)...');
+    console.log('🔐 [AUTH] Initialisation...');
     initializedRef.current = true;
 
-    // Écouter les changements d'auth
+    // 1. Récupérer la session existante
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔐 [AUTH] Session initiale:', session?.user?.email || 'Aucune');
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // 2. Écouter les changements d'auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔐 [AUTH] Événement:', event);
       console.log('🔐 [AUTH] User:', session?.user?.email || 'Aucun');
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
-    console.log('✅ [AUTH] Listener actif, en attente d\'authentification...');
+    console.log('✅ [AUTH] Listener actif');
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

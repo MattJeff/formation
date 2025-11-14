@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { auth } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { Search, Filter } from 'lucide-react';
 
@@ -12,7 +12,7 @@ export function CoursesClient() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { user: currentUser } = await auth.getUser();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
       setLoading(false);
     };

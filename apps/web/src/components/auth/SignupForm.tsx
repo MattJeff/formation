@@ -70,15 +70,17 @@ export function SignupForm() {
     }
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp(
-        formData.email,
-        formData.password,
-        {
-          full_name: `${formData.firstName} ${formData.lastName}`,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-        }
-      );
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: `${formData.firstName} ${formData.lastName}`,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+          },
+        },
+      });
 
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
@@ -109,7 +111,12 @@ export function SignupForm() {
     setLoading(true);
 
     try {
-      const { error: oauthError } = await auth.signInWithOAuth(provider);
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
       if (oauthError) {
         setError(`Erreur d'inscription avec ${provider}: ${oauthError.message}`);

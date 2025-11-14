@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth, supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { ArrowLeft, Bell, Lock, CreditCard, Globe, Trash2, Users, GraduationCap, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
@@ -16,7 +16,7 @@ export function SettingsClient() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const { user: currentUser } = await auth.getUser();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (!currentUser) {
         router.push('/login');
