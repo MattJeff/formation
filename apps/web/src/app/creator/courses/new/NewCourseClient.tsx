@@ -318,19 +318,29 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
                 )}
               </div>
             ) : lesson.fileUrl ? (
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
-                <Video className="h-8 w-8 text-blue-500" />
-                <div className="flex-1">
-                  <p className="font-medium">Vidéo existante</p>
-                  <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                  <Video className="h-8 w-8 text-blue-500" />
+                  <div className="flex-1">
+                    <p className="font-medium">Vidéo existante</p>
+                    <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                  </div>
+                  <UploadStatusIndicator
+                    status={lesson.uploadStatus || 'success'}
+                    error={lesson.uploadError}
+                    onRetry={retryUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={removeFile}
+                    className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={removeFile}
-                  className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                {lesson.uploadError && (
+                  <p className="text-xs text-red-500">Erreur: {lesson.uploadError}</p>
+                )}
               </div>
             ) : (
               <>
@@ -390,15 +400,25 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
                 )}
               </div>
             ) : lesson.fileUrl ? (
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
-                <FileText className="h-8 w-8 text-red-500" />
-                <div className="flex-1">
-                  <p className="font-medium">PDF existant</p>
-                  <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                  <FileText className="h-8 w-8 text-red-500" />
+                  <div className="flex-1">
+                    <p className="font-medium">PDF existant</p>
+                    <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                  </div>
+                  <UploadStatusIndicator
+                    status={lesson.uploadStatus || 'success'}
+                    error={lesson.uploadError}
+                    onRetry={retryUpload}
+                  />
+                  <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
-                  <X className="h-4 w-4" />
-                </button>
+                {lesson.uploadError && (
+                  <p className="text-xs text-red-500">Erreur: {lesson.uploadError}</p>
+                )}
               </div>
             ) : (
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary p-6 hover:border-primary">
@@ -448,15 +468,25 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
                 )}
               </div>
             ) : lesson.fileUrl ? (
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
-                <File className="h-8 w-8 text-blue-500" />
-                <div className="flex-1">
-                  <p className="font-medium">Fichier existant</p>
-                  <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                  <File className="h-8 w-8 text-blue-500" />
+                  <div className="flex-1">
+                    <p className="font-medium">Fichier existant</p>
+                    <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                  </div>
+                  <UploadStatusIndicator
+                    status={lesson.uploadStatus || 'success'}
+                    error={lesson.uploadError}
+                    onRetry={retryUpload}
+                  />
+                  <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
-                  <X className="h-4 w-4" />
-                </button>
+                {lesson.uploadError && (
+                  <p className="text-xs text-red-500">Erreur: {lesson.uploadError}</p>
+                )}
               </div>
             ) : (
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary p-6 hover:border-primary">
@@ -553,6 +583,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         // Pré-remplir l'image
         if (course.cover_image) {
           setImagePreview(course.cover_image);
+          setCoverImageUploadStatus('success'); // Fichier déjà uploadé
         }
 
         // Pré-remplir les sections et leçons
@@ -560,16 +591,21 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
           setSections(course.sections.map((s: any) => ({
             id: s.id || Date.now().toString(),
             title: s.title,
-            lessons: (s.lessons || []).map((l: any) => ({
-              id: l.id || Date.now().toString(),
-              title: l.title,
-              type: l.type,
-              duration: l.duration?.toString() || '0',
-              description: l.description || '',
-              content: l.content || l.video_url || '',
-              fileUrl: l.file_url || l.video_url || '',
-              file: null,
-            }))
+            lessons: (s.lessons || []).map((l: any) => {
+              const fileUrl = l.file_url || l.video_url || '';
+              return {
+                id: l.id || Date.now().toString(),
+                title: l.title,
+                type: l.type,
+                duration: l.duration?.toString() || '0',
+                description: l.description || '',
+                content: l.content || l.video_url || '',
+                fileUrl,
+                file: null,
+                uploadStatus: fileUrl ? 'success' : 'idle', // Fichier existant = success
+                uploadError: '',
+              };
+            })
           })));
         }
       } else {
@@ -698,6 +734,8 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
           duration: '5:00',
           file: null,
           fileUrl: '',
+          uploadStatus: 'idle',
+          uploadError: '',
         };
         return { ...s, lessons: [...s.lessons, newLesson] };
       }
