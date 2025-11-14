@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
@@ -286,10 +286,16 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
   );
 }
 
-export function NewCourseClient() {
+interface NewCourseClientProps {
+  courseId?: string;
+  mode?: 'create' | 'edit';
+}
+
+export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientProps = {}) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<Step>('basic');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(mode === 'edit');
 
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -308,6 +314,77 @@ export function NewCourseClient() {
   const [sections, setSections] = useState<Section[]>([
     { id: '1', title: 'Introduction', lessons: [] },
   ]);
+
+  // Charger les données en mode édition
+  useEffect(() => {
+    if (mode === 'edit' && courseId) {
+      loadCourseData();
+    }
+  }, [mode, courseId]);
+
+  const loadCourseData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/courses/${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.course) {
+        const course = data.course;
+
+        // Pré-remplir le formulaire
+        setFormData({
+          title: course.title || '',
+          subtitle: course.subtitle || '',
+          description: course.description || '',
+          category: course.category || 'web-dev',
+          level: course.level || 'beginner',
+          price: course.price?.toString() || '',
+          comparePrice: course.compare_price?.toString() || '',
+        });
+
+        // Pré-remplir l'image
+        if (course.cover_image) {
+          setImagePreview(course.cover_image);
+        }
+
+        // Pré-remplir les sections et leçons
+        if (course.sections && course.sections.length > 0) {
+          setSections(course.sections.map((s: any) => ({
+            id: s.id || Date.now().toString(),
+            title: s.title,
+            lessons: (s.lessons || []).map((l: any) => ({
+              id: l.id || Date.now().toString(),
+              title: l.title,
+              type: l.type,
+              duration: l.duration?.toString() || '0',
+              description: l.description || '',
+              content: l.content || l.video_url || l.file_url || '',
+            }))
+          })));
+        }
+      } else {
+        alert('❌ Impossible de charger le cours');
+        router.push('/creator/dashboard');
+      }
+    } catch (error) {
+      console.error('Error loading course:', error);
+      alert('❌ Erreur lors du chargement');
+      router.push('/creator/dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -418,25 +495,32 @@ export function NewCourseClient() {
       return;
     }
 
-    if (!confirm('💾 Sauvegarder ce cours comme brouillon ?')) {
+    const message = mode === 'edit'
+      ? '💾 Sauvegarder les modifications ?'
+      : '💾 Sauvegarder ce cours comme brouillon ?';
+
+    if (!confirm(message)) {
       return;
     }
 
     setSaving(true);
     try {
-      console.log('📤 Envoi de la requête POST /api/courses (brouillon)...');
-      
+      const method = mode === 'edit' ? 'PUT' : 'POST';
+      const url = mode === 'edit' ? `/api/courses/${courseId}` : '/api/courses';
+
+      console.log(`📤 Envoi de la requête ${method} ${url} (brouillon)...`);
+
       // Récupérer le token d'authentification
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         alert('❌ Vous devez être connecté pour sauvegarder un cours');
         setSaving(false);
         return;
       }
-      
-      const response = await fetch('/api/courses', {
-        method: 'POST',
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
@@ -484,7 +568,7 @@ export function NewCourseClient() {
   const handlePublish = async () => {
     // Validation complète pour publication
     const errors = validateCourse();
-    
+
     if (errors.length > 0) {
       alert('❌ Erreurs de validation :\n\n' + errors.join('\n'));
       return;
@@ -506,25 +590,32 @@ export function NewCourseClient() {
       return;
     }
 
-    if (!confirm('🚀 Publier ce cours maintenant ?\n\nUne fois publié, il sera visible par tous les utilisateurs.')) {
+    const confirmMessage = mode === 'edit'
+      ? '💾 Sauvegarder et publier les modifications ?\n\nLe cours mis à jour sera visible par tous les utilisateurs.'
+      : '🚀 Publier ce cours maintenant ?\n\nUne fois publié, il sera visible par tous les utilisateurs.';
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     setSaving(true);
     try {
-      console.log('📤 Envoi de la requête POST /api/courses...');
-      
+      const method = mode === 'edit' ? 'PUT' : 'POST';
+      const url = mode === 'edit' ? `/api/courses/${courseId}` : '/api/courses';
+
+      console.log(`📤 Envoi de la requête ${method} ${url}...`);
+
       // Récupérer le token d'authentification
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         alert('❌ Vous devez être connecté pour publier un cours');
         setSaving(false);
         return;
       }
-      
-      const response = await fetch('/api/courses', {
-        method: 'POST',
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
@@ -826,17 +917,38 @@ export function NewCourseClient() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <div className="container mx-auto max-w-4xl px-4 py-8">
-        <Link href="/creator/courses" className="mb-6 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour aux cours
-        </Link>
+        <div className="mb-6 flex items-center justify-between">
+          <Link href="/creator/dashboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour au dashboard
+          </Link>
+          {mode === 'edit' && courseId && (
+            <Link
+              href={`/courses/${courseId}`}
+              target="_blank"
+              className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20"
+            >
+              👁️ Prévisualiser
+            </Link>
+          )}
+        </div>
 
-        <h1 className="mb-8 text-3xl font-bold">Créer un nouveau cours</h1>
+        <h1 className="mb-8 text-3xl font-bold">
+          {mode === 'edit' ? 'Modifier le cours' : 'Créer un nouveau cours'}
+        </h1>
 
         {/* Indicateur d'étapes */}
         <div className="mb-8 flex items-center justify-center gap-4">
