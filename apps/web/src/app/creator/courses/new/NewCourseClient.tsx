@@ -545,7 +545,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
     return errors;
   };
 
-  const uploadFileToStorage = async (file: File, bucket: 'images' | 'videos' | 'pdfs'): Promise<string | null> => {
+  const uploadFileToStorage = async (file: File, bucket: 'image' | 'video' | 'pdf'): Promise<string | null> => {
     try {
       // Générer un nom de fichier unique
       const timestamp = Date.now();
@@ -598,21 +598,27 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
           // Déterminer le bucket selon le type de leçon
           if (lesson.type === 'video') {
-            uploadedUrl = await uploadFileToStorage(lesson.file, 'videos');
+            uploadedUrl = await uploadFileToStorage(lesson.file, 'video');
             if (uploadedUrl) {
               videoUrl = uploadedUrl;
               fileUrl = uploadedUrl;
+            } else {
+              throw new Error(`Échec de l'upload de la vidéo: ${lesson.title}`);
             }
           } else if (lesson.type === 'pdf') {
-            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdfs');
+            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdf');
             if (uploadedUrl) {
               fileUrl = uploadedUrl;
+            } else {
+              throw new Error(`Échec de l'upload du PDF: ${lesson.title}`);
             }
           } else if (lesson.type === 'file') {
-            // Pour les fichiers génériques, on peut utiliser pdfs ou créer un bucket files
-            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdfs');
+            // Pour les fichiers génériques, on utilise le bucket pdf
+            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdf');
             if (uploadedUrl) {
               fileUrl = uploadedUrl;
+            } else {
+              throw new Error(`Échec de l'upload du fichier: ${lesson.title}`);
             }
           }
         }
@@ -674,13 +680,13 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
       let coverImageUrl = imagePreview;
       if (coverImage) {
         console.log('📤 Upload de l\'image de couverture...');
-        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'images');
+        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'image');
         if (uploadedImageUrl) {
           coverImageUrl = uploadedImageUrl;
           setImagePreview(uploadedImageUrl);
           setCoverImage(null); // Réinitialiser après upload
         } else {
-          alert('❌ Erreur lors de l\'upload de l\'image de couverture');
+          alert('❌ Erreur lors de l\'upload de l\'image de couverture\n\nVérifiez que le bucket "image" existe dans Supabase Storage et que vous avez les permissions d\'upload.');
           setSaving(false);
           return;
         }
@@ -688,7 +694,15 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
       // Préparer les sections pour l'envoi (upload des fichiers)
       console.log('📤 Upload des fichiers des leçons...');
-      const preparedSections = await prepareSectionsForSave();
+      let preparedSections;
+      try {
+        preparedSections = await prepareSectionsForSave();
+      } catch (uploadError) {
+        console.error('❌ Erreur lors de l\'upload des fichiers:', uploadError);
+        alert(`❌ Erreur lors de l'upload des fichiers:\n\n${uploadError instanceof Error ? uploadError.message : String(uploadError)}\n\nLes données n'ont pas été sauvegardées.`);
+        setSaving(false);
+        return;
+      }
 
       const response = await fetch(url, {
         method,
@@ -789,13 +803,13 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
       let coverImageUrl = imagePreview;
       if (coverImage) {
         console.log('📤 Upload de l\'image de couverture...');
-        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'images');
+        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'image');
         if (uploadedImageUrl) {
           coverImageUrl = uploadedImageUrl;
           setImagePreview(uploadedImageUrl);
           setCoverImage(null); // Réinitialiser après upload
         } else {
-          alert('❌ Erreur lors de l\'upload de l\'image de couverture');
+          alert('❌ Erreur lors de l\'upload de l\'image de couverture\n\nVérifiez que le bucket "image" existe dans Supabase Storage et que vous avez les permissions d\'upload.');
           setSaving(false);
           return;
         }
@@ -803,7 +817,15 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
       // Préparer les sections pour l'envoi (upload des fichiers)
       console.log('📤 Upload des fichiers des leçons...');
-      const preparedSections = await prepareSectionsForSave();
+      let preparedSections;
+      try {
+        preparedSections = await prepareSectionsForSave();
+      } catch (uploadError) {
+        console.error('❌ Erreur lors de l\'upload des fichiers:', uploadError);
+        alert(`❌ Erreur lors de l'upload des fichiers:\n\n${uploadError instanceof Error ? uploadError.message : String(uploadError)}\n\nLes données n'ont pas été sauvegardées.`);
+        setSaving(false);
+        return;
+      }
 
       const response = await fetch(url, {
         method,
