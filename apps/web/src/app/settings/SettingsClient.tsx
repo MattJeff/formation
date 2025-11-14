@@ -65,7 +65,7 @@ export function SettingsClient() {
       }
 
       // 3. Rafraîchir la session pour obtenir les nouvelles metadata
-      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+      const { error: refreshError } = await supabase.auth.refreshSession();
 
       if (refreshError) {
         console.error('Erreur refresh session:', refreshError);

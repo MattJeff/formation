@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export default function CreatorProfilePage({ params }: { params: { id: string } }) {
+export default function CreatorProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, Upload, Video, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
 export default function UploadVideoPage() {

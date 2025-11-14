@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import {
@@ -25,7 +24,6 @@ interface CourseDetailClientProps {
 }
 
 export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
-  const router = useRouter();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -257,7 +255,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
                     {expandedSections.has(section.id) && (
                       <div className="divide-y divide-border">
-                        {section.lessons?.map((lesson: any, idx: number) => (
+                        {section.lessons?.map((lesson: any) => (
                           <div key={lesson.id} className="flex items-center gap-3 p-4">
                             {lesson.type === 'video' && <PlayCircle className="h-5 w-5 text-primary" />}
                             {lesson.type === 'quiz' && <FileText className="h-5 w-5 text-primary" />}

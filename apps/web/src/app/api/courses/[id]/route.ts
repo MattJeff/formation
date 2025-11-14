@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // GET - Récupérer un cours spécifique (public ou privé)
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {

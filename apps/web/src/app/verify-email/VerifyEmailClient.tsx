@@ -8,7 +8,7 @@ import { Mail, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 export function VerifyEmailClient() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
