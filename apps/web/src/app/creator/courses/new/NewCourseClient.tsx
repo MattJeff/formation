@@ -958,6 +958,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         },
         body: JSON.stringify({
           ...formData,
+          price: formData.price || '0', // Prix par défaut pour brouillon
           sections: preparedSections,
           coverImage: coverImageUrl,
           status: 'draft',
@@ -1128,9 +1129,9 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
   const canGoToNextStep = () => {
     if (currentStep === 'basic') {
-      // En mode édition, on accepte imagePreview, en mode création on vérifie coverImage
-      const hasImage = mode === 'edit' ? (coverImage || imagePreview) : coverImage;
-      return formData.title && formData.description && hasImage;
+      // Vérifier qu'on a une image ET qu'elle est uploadée avec succès
+      const hasValidImage = imagePreview && (coverImageUploadStatus === 'success' || mode === 'edit');
+      return formData.title && formData.description && hasValidImage;
     }
     if (currentStep === 'curriculum') {
       return sections.some(s => s.lessons.length > 0);
