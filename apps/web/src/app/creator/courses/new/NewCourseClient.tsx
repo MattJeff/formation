@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Upload, X, Plus, Save, ArrowRight, Loader2, Video, FileText, Link as LinkIcon, File } from 'lucide-react';
+import { ArrowLeft, Upload, X, Plus, Save, ArrowRight, Loader2, Video, FileText, Link as LinkIcon, File, Check, AlertCircle, RefreshCw } from 'lucide-react';
 
 type Step = 'basic' | 'curriculum' | 'pricing';
 
@@ -24,6 +24,58 @@ interface Lesson {
   content?: string;
   file?: File | null;
   fileUrl?: string; // URL du fichier existant en mode édition
+  uploadStatus?: 'idle' | 'uploading' | 'success' | 'error'; // Statut de l'upload
+  uploadError?: string; // Message d'erreur si échec
+}
+
+// Composant pour afficher le statut d'upload
+function UploadStatusIndicator({ status, error, onRetry }: {
+  status?: 'idle' | 'uploading' | 'success' | 'error';
+  error?: string;
+  onRetry?: () => void;
+}) {
+  if (!status || status === 'idle') return null;
+
+  if (status === 'uploading') {
+    return (
+      <div className="flex items-center gap-2 rounded-md bg-blue-500/10 px-2 py-1" title="Upload en cours...">
+        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+        <span className="text-xs text-blue-500">Upload...</span>
+      </div>
+    );
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="flex items-center gap-1 rounded-md bg-green-500/10 px-2 py-1" title="Fichier uploadé">
+        <Check className="h-3 w-3 text-green-500" />
+        <span className="text-xs text-green-500">Uploadé</span>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="flex items-center gap-1" title={error || 'Erreur d\'upload'}>
+        <div className="flex items-center gap-1 rounded-md bg-red-500/10 px-2 py-1">
+          <AlertCircle className="h-3 w-3 text-red-500" />
+          <span className="text-xs text-red-500">Échec</span>
+        </div>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-md p-1 hover:bg-accent"
+            title="Réessayer l'upload"
+          >
+            <RefreshCw className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 // Composant pour éditer une leçon
@@ -36,16 +88,78 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
-    if (uploadedFile) {
-      onUpdate(sectionId, lesson.id, 'file', uploadedFile);
+    if (!uploadedFile) return;
+
+    // Mettre le fichier et le statut à "uploading"
+    onUpdate(sectionId, lesson.id, 'file', uploadedFile);
+    onUpdate(sectionId, lesson.id, 'uploadStatus', 'uploading');
+
+    // Déterminer le bucket selon le type de leçon
+    let bucket: 'image' | 'video' | 'pdf' = 'pdf';
+    if (lesson.type === 'video') bucket = 'video';
+    else if (lesson.type === 'pdf') bucket = 'pdf';
+    else if (lesson.type === 'file') bucket = 'pdf';
+
+    try {
+      // Upload immédiat
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(7);
+      const fileExt = uploadedFile.name.split('.').pop();
+      const fileName = `${timestamp}-${randomStr}.${fileExt}`;
+
+      const supabase = (await import('@/lib/supabase')).supabase;
+
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, uploadedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error(`❌ Erreur upload ${bucket}:`, error);
+        onUpdate(sectionId, lesson.id, 'uploadStatus', 'error');
+        onUpdate(sectionId, lesson.id, 'uploadError', error.message);
+        return;
+      }
+
+      // Récupérer l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      console.log(`✅ Fichier uploadé: ${publicUrl}`);
+
+      // Mettre à jour avec l'URL et le statut success
+      onUpdate(sectionId, lesson.id, 'fileUrl', publicUrl);
+      onUpdate(sectionId, lesson.id, 'uploadStatus', 'success');
+      onUpdate(sectionId, lesson.id, 'uploadError', '');
+    } catch (error) {
+      console.error('❌ Erreur upload:', error);
+      onUpdate(sectionId, lesson.id, 'uploadStatus', 'error');
+      onUpdate(sectionId, lesson.id, 'uploadError', error instanceof Error ? error.message : 'Erreur inconnue');
+    }
+  };
+
+  const retryUpload = () => {
+    if (lesson.file) {
+      // Simuler un nouvel upload avec le même fichier
+      const fakeEvent = {
+        target: {
+          files: [lesson.file]
+        }
+      } as any;
+      handleFileUpload(fakeEvent);
     }
   };
 
   const removeFile = () => {
     onUpdate(sectionId, lesson.id, 'file', null);
     onUpdate(sectionId, lesson.id, 'fileUrl', '');
+    onUpdate(sectionId, lesson.id, 'uploadStatus', 'idle');
+    onUpdate(sectionId, lesson.id, 'uploadError', '');
   };
 
   if (!isExpanded) {
@@ -69,9 +183,11 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
           placeholder="Titre de la leçon"
         />
         {hasFile && (
-          <span className="rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-500">
-            Fichier
-          </span>
+          <UploadStatusIndicator
+            status={lesson.uploadStatus || 'success'}
+            error={lesson.uploadError}
+            onRetry={retryUpload}
+          />
         )}
         <select
           value={lesson.type}
@@ -177,19 +293,29 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
           <div>
             <label className="mb-2 block text-sm font-medium">Vidéo</label>
             {lesson.file ? (
-              <div className="flex items-center gap-3 rounded-lg border border-border p-4">
-                <Video className="h-8 w-8 text-blue-500" />
-                <div className="flex-1">
-                  <p className="font-medium">{lesson.file.name}</p>
-                  <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 rounded-lg border border-border p-4">
+                  <Video className="h-8 w-8 text-blue-500" />
+                  <div className="flex-1">
+                    <p className="font-medium">{lesson.file.name}</p>
+                    <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <UploadStatusIndicator
+                    status={lesson.uploadStatus}
+                    error={lesson.uploadError}
+                    onRetry={retryUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={removeFile}
+                    className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={removeFile}
-                  className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                {lesson.uploadError && (
+                  <p className="text-xs text-red-500">Erreur: {lesson.uploadError}</p>
+                )}
               </div>
             ) : lesson.fileUrl ? (
               <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
@@ -243,15 +369,25 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
           <div>
             <label className="mb-2 block text-sm font-medium">Document PDF</label>
             {lesson.file ? (
-              <div className="flex items-center gap-3 rounded-lg border border-border p-4">
-                <FileText className="h-8 w-8 text-red-500" />
-                <div className="flex-1">
-                  <p className="font-medium">{lesson.file.name}</p>
-                  <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 rounded-lg border border-border p-4">
+                  <FileText className="h-8 w-8 text-red-500" />
+                  <div className="flex-1">
+                    <p className="font-medium">{lesson.file.name}</p>
+                    <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <UploadStatusIndicator
+                    status={lesson.uploadStatus}
+                    error={lesson.uploadError}
+                    onRetry={retryUpload}
+                  />
+                  <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
-                  <X className="h-4 w-4" />
-                </button>
+                {lesson.uploadError && (
+                  <p className="text-xs text-red-500">Erreur: {lesson.uploadError}</p>
+                )}
               </div>
             ) : lesson.fileUrl ? (
               <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
@@ -291,15 +427,25 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
           <div>
             <label className="mb-2 block text-sm font-medium">Fichier</label>
             {lesson.file ? (
-              <div className="flex items-center gap-3 rounded-lg border border-border p-4">
-                <File className="h-8 w-8 text-blue-500" />
-                <div className="flex-1">
-                  <p className="font-medium">{lesson.file.name}</p>
-                  <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 rounded-lg border border-border p-4">
+                  <File className="h-8 w-8 text-blue-500" />
+                  <div className="flex-1">
+                    <p className="font-medium">{lesson.file.name}</p>
+                    <p className="text-sm text-muted-foreground">{(lesson.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <UploadStatusIndicator
+                    status={lesson.uploadStatus}
+                    error={lesson.uploadError}
+                    onRetry={retryUpload}
+                  />
+                  <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button type="button" onClick={removeFile} className="rounded-md p-2 hover:bg-destructive hover:text-destructive-foreground">
-                  <X className="h-4 w-4" />
-                </button>
+                {lesson.uploadError && (
+                  <p className="text-xs text-red-500">Erreur: {lesson.uploadError}</p>
+                )}
               </div>
             ) : lesson.fileUrl ? (
               <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
@@ -359,6 +505,8 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [coverImageUploadStatus, setCoverImageUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [coverImageUploadError, setCoverImageUploadError] = useState<string>('');
 
   const [sections, setSections] = useState<Section[]>([
     { id: '1', title: 'Introduction', lessons: [] },
@@ -441,21 +589,76 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setCoverImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Afficher la preview localement
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setCoverImage(file);
+    setCoverImageUploadStatus('uploading');
+
+    try {
+      // Upload immédiat vers Supabase Storage
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(7);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${timestamp}-${randomStr}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('image')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('❌ Erreur upload image:', error);
+        setCoverImageUploadStatus('error');
+        setCoverImageUploadError(error.message);
+        return;
+      }
+
+      // Récupérer l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from('image')
+        .getPublicUrl(fileName);
+
+      console.log(`✅ Image uploadée: ${publicUrl}`);
+
+      // Mettre à jour avec l'URL Supabase
+      setImagePreview(publicUrl);
+      setCoverImage(null); // Fichier uploadé, on garde juste l'URL
+      setCoverImageUploadStatus('success');
+      setCoverImageUploadError('');
+    } catch (error) {
+      console.error('❌ Erreur upload:', error);
+      setCoverImageUploadStatus('error');
+      setCoverImageUploadError(error instanceof Error ? error.message : 'Erreur inconnue');
+    }
+  };
+
+  const retryCoverImageUpload = () => {
+    if (coverImage) {
+      const fakeEvent = {
+        target: {
+          files: [coverImage]
+        }
+      } as any;
+      handleImageChange(fakeEvent);
     }
   };
 
   const removeImage = () => {
     setCoverImage(null);
     setImagePreview('');
+    setCoverImageUploadStatus('idle');
+    setCoverImageUploadError('');
   };
 
   const addSection = () => {
@@ -676,33 +879,38 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         return;
       }
 
-      // Uploader l'image de couverture si c'est un nouveau fichier
-      let coverImageUrl = imagePreview;
-      if (coverImage) {
-        console.log('📤 Upload de l\'image de couverture...');
-        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'image');
-        if (uploadedImageUrl) {
-          coverImageUrl = uploadedImageUrl;
-          setImagePreview(uploadedImageUrl);
-          setCoverImage(null); // Réinitialiser après upload
-        } else {
-          alert('❌ Erreur lors de l\'upload de l\'image de couverture\n\nVérifiez que le bucket "image" existe dans Supabase Storage et que vous avez les permissions d\'upload.');
-          setSaving(false);
-          return;
-        }
-      }
-
-      // Préparer les sections pour l'envoi (upload des fichiers)
-      console.log('📤 Upload des fichiers des leçons...');
-      let preparedSections;
-      try {
-        preparedSections = await prepareSectionsForSave();
-      } catch (uploadError) {
-        console.error('❌ Erreur lors de l\'upload des fichiers:', uploadError);
-        alert(`❌ Erreur lors de l'upload des fichiers:\n\n${uploadError instanceof Error ? uploadError.message : String(uploadError)}\n\nLes données n'ont pas été sauvegardées.`);
+      // L'image de couverture devrait déjà être uploadée (upload immédiat)
+      // Si elle n'est pas uploadée, on bloque
+      if (coverImageUploadStatus === 'uploading') {
+        alert('⏳ Upload de l\'image de couverture en cours...\n\nVeuillez patienter que l\'upload se termine.');
         setSaving(false);
         return;
       }
+
+      if (coverImageUploadStatus === 'error') {
+        alert('❌ L\'image de couverture n\'a pas pu être uploadée.\n\nVeuillez réessayer l\'upload avant de sauvegarder.');
+        setSaving(false);
+        return;
+      }
+
+      const coverImageUrl = imagePreview;
+
+      // Les fichiers des leçons devraient déjà être uploadés (upload immédiat)
+      // Préparer les sections pour l'envoi sans upload (juste récupérer les URLs)
+      const preparedSections = sections.map(section => ({
+        id: section.id,
+        title: section.title,
+        lessons: section.lessons.map(lesson => ({
+          id: lesson.id,
+          title: lesson.title,
+          type: lesson.type,
+          duration: lesson.duration,
+          description: lesson.description,
+          content: lesson.content,
+          file_url: lesson.fileUrl || '',
+          video_url: lesson.type === 'video' ? (lesson.content || lesson.fileUrl) : '',
+        }))
+      }));
 
       const response = await fetch(url, {
         method,
@@ -799,33 +1007,38 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         return;
       }
 
-      // Uploader l'image de couverture si c'est un nouveau fichier
-      let coverImageUrl = imagePreview;
-      if (coverImage) {
-        console.log('📤 Upload de l\'image de couverture...');
-        const uploadedImageUrl = await uploadFileToStorage(coverImage, 'image');
-        if (uploadedImageUrl) {
-          coverImageUrl = uploadedImageUrl;
-          setImagePreview(uploadedImageUrl);
-          setCoverImage(null); // Réinitialiser après upload
-        } else {
-          alert('❌ Erreur lors de l\'upload de l\'image de couverture\n\nVérifiez que le bucket "image" existe dans Supabase Storage et que vous avez les permissions d\'upload.');
-          setSaving(false);
-          return;
-        }
-      }
-
-      // Préparer les sections pour l'envoi (upload des fichiers)
-      console.log('📤 Upload des fichiers des leçons...');
-      let preparedSections;
-      try {
-        preparedSections = await prepareSectionsForSave();
-      } catch (uploadError) {
-        console.error('❌ Erreur lors de l\'upload des fichiers:', uploadError);
-        alert(`❌ Erreur lors de l'upload des fichiers:\n\n${uploadError instanceof Error ? uploadError.message : String(uploadError)}\n\nLes données n'ont pas été sauvegardées.`);
+      // L'image de couverture devrait déjà être uploadée (upload immédiat)
+      // Si elle n'est pas uploadée, on bloque
+      if (coverImageUploadStatus === 'uploading') {
+        alert('⏳ Upload de l\'image de couverture en cours...\n\nVeuillez patienter que l\'upload se termine.');
         setSaving(false);
         return;
       }
+
+      if (coverImageUploadStatus === 'error') {
+        alert('❌ L\'image de couverture n\'a pas pu être uploadée.\n\nVeuillez réessayer l\'upload avant de sauvegarder.');
+        setSaving(false);
+        return;
+      }
+
+      const coverImageUrl = imagePreview;
+
+      // Les fichiers des leçons devraient déjà être uploadés (upload immédiat)
+      // Préparer les sections pour l'envoi sans upload (juste récupérer les URLs)
+      const preparedSections = sections.map(section => ({
+        id: section.id,
+        title: section.title,
+        lessons: section.lessons.map(lesson => ({
+          id: lesson.id,
+          title: lesson.title,
+          type: lesson.type,
+          duration: lesson.duration,
+          description: lesson.description,
+          content: lesson.content,
+          file_url: lesson.fileUrl || '',
+          video_url: lesson.type === 'video' ? (lesson.content || lesson.fileUrl) : '',
+        }))
+      }));
 
       const response = await fetch(url, {
         method,
@@ -964,20 +1177,32 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
                 Image de couverture <span className="text-destructive">*</span>
               </h2>
               {imagePreview ? (
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Aperçu"
-                    className="w-full rounded-lg object-cover"
-                    style={{ maxHeight: '400px' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute right-2 top-2 rounded-full bg-destructive p-2 text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Aperçu"
+                      className="w-full rounded-lg object-cover"
+                      style={{ maxHeight: '400px' }}
+                    />
+                    <div className="absolute left-2 top-2">
+                      <UploadStatusIndicator
+                        status={coverImageUploadStatus}
+                        error={coverImageUploadError}
+                        onRetry={retryCoverImageUpload}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute right-2 top-2 rounded-full bg-destructive p-2 text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {coverImageUploadError && (
+                    <p className="text-xs text-red-500">Erreur: {coverImageUploadError}</p>
+                  )}
                 </div>
               ) : (
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary p-12 transition-colors hover:border-primary">
