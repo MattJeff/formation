@@ -265,7 +265,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
                       {isEnrolled ? (
                         <Link
-                          href={`/courses/${courseId}/learn`}
+                          href={`/learn/${courseId}`}
                           className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90"
                         >
                           <PlayCircle className="h-5 w-5" />
@@ -295,7 +295,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                       </div>
 
                       <Link
-                        href={`/courses/${courseId}/learn`}
+                        href={`/learn/${courseId}`}
                         className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90"
                       >
                         <PlayCircle className="h-5 w-5" />

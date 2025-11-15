@@ -87,7 +87,7 @@ export function EnrollClient({ courseId }: EnrollClientProps) {
 
       if (existingEnrollment) {
         console.log('ℹ️ [ENROLL] Déjà inscrit, redirection...');
-        router.push(`/courses/${courseId}/learn`);
+        router.push(`/learn/${courseId}`);
         return;
       }
 
@@ -116,7 +116,7 @@ export function EnrollClient({ courseId }: EnrollClientProps) {
 
       // Redirection après 1 seconde
       setTimeout(() => {
-        router.push(`/courses/${courseId}/learn`);
+        router.push(`/learn/${courseId}`);
       }, 1500);
     } catch (error) {
       console.error('❌ [ENROLL] Erreur:', error);
