@@ -36,7 +36,7 @@ export function CreatorDashboardClient() {
       hasLoadedCourses.current = true;
       loadCourses();
     }
-  }, [user, session, authLoading, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, session, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCourses = async () => {
     setLoadingCourses(true);

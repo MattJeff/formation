@@ -27,7 +27,7 @@ export function ProfileClient() {
       hasLoadedStats.current = true;
       loadStats();
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadStats = async () => {
     try {

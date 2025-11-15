@@ -45,7 +45,7 @@ export default function CoursesClient() {
       hasLoadedCourses.current = true;
       loadCourses();
     }
-  }, [user, session, authLoading, router]);
+  }, [user, session, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCourses = async () => {
     try {
