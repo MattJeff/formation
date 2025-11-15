@@ -14,6 +14,12 @@ export function CreatorDashboardClient() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+  const [stats, setStats] = useState({
+    revenue: 0,
+    students: 0,
+    engagement: 0,
+    activeCourses: 0
+  });
 
   useEffect(() => {
     console.log('🔄 [DASHBOARD] useEffect appelé - authLoading:', authLoading, 'user:', !!user, 'userId:', user?.id, 'hasAttempted:', hasAttemptedLoad);
@@ -42,24 +48,70 @@ export function CreatorDashboardClient() {
   }, [user?.id, authLoading, hasAttemptedLoad]);
 
   const loadCourses = async () => {
+    // VÉRIFICATION: S'assurer que user.id est défini
+    if (!user?.id) {
+      console.log('❌ [DASHBOARD] User ID non défini, abandon du chargement');
+      return;
+    }
+
     setLoadingCourses(true);
-    console.log('📊 [DASHBOARD] Chargement des cours pour:', user?.id);
+    console.log('📊 [DASHBOARD] Chargement des cours pour:', user.id);
 
     try {
-      // Utiliser directement Supabase au lieu de l'API route
-      const { data: courses, error } = await supabase
+      // Charger les cours
+      const { data: coursesData, error: coursesError } = await supabase
         .from('courses')
         .select('*')
-        .eq('creator_id', user?.id)
+        .eq('creator_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('❌ [DASHBOARD] Error loading courses:', error);
+      if (coursesError) {
+        console.error('❌ [DASHBOARD] Error loading courses:', coursesError);
         return;
       }
 
-      console.log('✅ [DASHBOARD] Cours chargés:', courses?.length || 0, 'cours');
-      setCourses(courses || []);
+      const allCourses = coursesData || [];
+      setCourses(allCourses);
+      console.log('✅ [DASHBOARD] Cours chargés:', allCourses.length, 'cours');
+
+      // Calculer les statistiques
+      const activeCourses = allCourses.filter(c => c.status === 'published').length;
+
+      // Charger les inscriptions
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('id, course_id, created_at')
+        .in('course_id', allCourses.map(c => c.id));
+
+      const totalStudents = enrollments?.length || 0;
+
+      // Calculer le revenu total
+      let revenue = 0;
+      enrollments?.forEach(enrollment => {
+        const course = allCourses.find(c => c.id === enrollment.course_id);
+        if (course) {
+          revenue += course.price || 0;
+        }
+      });
+
+      // Calculer le taux d'engagement (leçons complétées / total leçons)
+      const { data: progress } = await supabase
+        .from('lesson_progress')
+        .select('id, is_completed')
+        .in('enrollment_id', enrollments?.map(e => e.id) || []);
+
+      const completedLessons = progress?.filter(p => p.is_completed).length || 0;
+      const totalLessons = progress?.length || 1;
+      const engagement = Math.round((completedLessons / totalLessons) * 100);
+
+      setStats({
+        revenue,
+        students: totalStudents,
+        engagement: engagement || 0,
+        activeCourses
+      });
+
+      console.log('✅ [DASHBOARD] Stats calculées:', { revenue, totalStudents, engagement, activeCourses });
     } catch (error) {
       console.error('❌ [DASHBOARD] Error loading courses:', error);
     } finally {
@@ -75,36 +127,36 @@ export function CreatorDashboardClient() {
     );
   }
 
-  const stats = [
-    { 
-      label: 'Revenus ce mois', 
-      value: '0€', 
-      change: '+0%', 
-      icon: DollarSign, 
+  const statsCards = [
+    {
+      label: 'Revenus totaux',
+      value: `${stats.revenue}€`,
+      change: '+0%',
+      icon: DollarSign,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10'
     },
-    { 
-      label: 'Nouveaux étudiants', 
-      value: '0', 
-      change: '+0%', 
-      icon: Users, 
+    {
+      label: 'Total étudiants',
+      value: stats.students.toString(),
+      change: '+0%',
+      icon: Users,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10'
     },
-    { 
-      label: "Taux d'engagement", 
-      value: '0%', 
-      change: '+0%', 
-      icon: TrendingUp, 
+    {
+      label: "Taux d'engagement",
+      value: `${stats.engagement}%`,
+      change: '+0%',
+      icon: TrendingUp,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10'
     },
-    { 
-      label: 'Cours actifs', 
-      value: '0', 
-      change: '+0', 
-      icon: BookOpen, 
+    {
+      label: 'Cours actifs',
+      value: stats.activeCourses.toString(),
+      change: `+${stats.activeCourses}`,
+      icon: BookOpen,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10'
     },
@@ -135,7 +187,7 @@ export function CreatorDashboardClient() {
 
         {/* Stats Cards */}
         <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
+          {statsCards.map((stat) => (
             <div key={stat.label} className="rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
