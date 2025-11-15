@@ -12,12 +12,12 @@
 -- 1. ACTIVER RLS SUR TOUTES LES TABLES
 -- ============================================
 -- NOTE: enrollments et lesson_progress ont déjà RLS activé dans leurs migrations
+-- NOTE: reviews n'existe pas encore, sera ajouté plus tard
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- 2. POLICIES POUR LA TABLE `profiles`
@@ -202,49 +202,8 @@ USING (
 -- ============================================
 -- 8. POLICIES POUR LA TABLE `reviews`
 -- ============================================
-
--- Supprimer les policies existantes
-DROP POLICY IF EXISTS "Published reviews are viewable by everyone" ON reviews;
-DROP POLICY IF EXISTS "Enrolled users can create reviews" ON reviews;
-DROP POLICY IF EXISTS "Users can update own reviews" ON reviews;
-DROP POLICY IF EXISTS "Users can delete own reviews and creators can delete course reviews" ON reviews;
-
--- Tout le monde peut VOIR les avis publiés
-CREATE POLICY "Published reviews are viewable by everyone"
-ON reviews FOR SELECT
-USING (status = 'published');
-
--- Les utilisateurs inscrits peuvent CRÉER des avis
-CREATE POLICY "Enrolled users can create reviews"
-ON reviews FOR INSERT
-WITH CHECK (
-  auth.uid() = user_id
-  AND
-  EXISTS (
-    SELECT 1 FROM enrollments
-    WHERE enrollments.user_id = auth.uid()
-    AND enrollments.course_id = reviews.course_id
-  )
-);
-
--- Les utilisateurs peuvent MODIFIER leurs propres avis
-CREATE POLICY "Users can update own reviews"
-ON reviews FOR UPDATE
-USING (auth.uid() = user_id);
-
--- Les utilisateurs peuvent SUPPRIMER leurs propres avis
--- Les créateurs peuvent SUPPRIMER les avis sur leurs cours (modération)
-CREATE POLICY "Users can delete own reviews and creators can delete course reviews"
-ON reviews FOR DELETE
-USING (
-  auth.uid() = user_id
-  OR
-  EXISTS (
-    SELECT 1 FROM courses
-    WHERE courses.id = reviews.course_id
-    AND courses.creator_id = auth.uid()
-  )
-);
+-- NOTE: La table reviews n'existe pas encore dans la base de données
+-- Les policies seront ajoutées lors de la création de cette table
 
 -- ============================================
 -- 9. VÉRIFICATION DES POLICIES

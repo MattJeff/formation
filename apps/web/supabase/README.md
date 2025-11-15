@@ -67,12 +67,6 @@ Tu devrais voir toutes les policies listées.
 - ✅ Visibles si le cours est publié ou appartient à l'utilisateur
 - ✅ Seul le créateur du cours peut modifier/supprimer
 
-### 5. **reviews** (4 policies)
-- ✅ Tout le monde voit les avis publiés
-- ✅ Seuls les inscrits peuvent créer un avis
-- ✅ L'utilisateur peut modifier son avis
-- ✅ Le créateur peut modérer (supprimer) les avis
-
 ### ℹ️ Tables déjà protégées par leurs migrations:
 
 ### 6. **enrollments** (4 policies) - `migrations/add_enrollments.sql`
@@ -84,6 +78,12 @@ Tu devrais voir toutes les policies listées.
 - ✅ L'utilisateur voit sa progression
 - ✅ Le créateur voit la progression sur ses cours
 - ✅ Seul l'utilisateur peut modifier sa progression
+
+### ℹ️ Tables non encore créées:
+
+### 8. **reviews** - Sera ajouté plus tard
+- Table non encore créée dans la base de données
+- Les policies seront ajoutées lors de l'implémentation du système d'avis
 
 ## 🧪 Comment tester?
 
