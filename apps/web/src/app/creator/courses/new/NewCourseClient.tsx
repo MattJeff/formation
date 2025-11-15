@@ -1042,8 +1042,15 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
       return;
     }
 
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      alert('❌ Le prix doit être supérieur à 0');
+    // Valider le prix (peut être 0 pour un cours gratuit)
+    if (formData.price === '' || formData.price === undefined) {
+      alert('❌ Veuillez définir un prix (vous pouvez mettre 0 pour un cours gratuit)');
+      return;
+    }
+
+    const price = parseFloat(formData.price);
+    if (isNaN(price) || price < 0) {
+      alert('❌ Le prix doit être un nombre valide (0 ou plus)');
       return;
     }
 
@@ -1373,9 +1380,13 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
                     value={formData.price}
                     onChange={(e) => handleInputChange('price', e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    placeholder="99.99"
+                    placeholder="0"
                     step="0.01"
+                    min="0"
                   />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Entrez 0 pour un cours gratuit, ou un montant pour un cours payant
+                  </p>
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium">Prix barré (€)</label>

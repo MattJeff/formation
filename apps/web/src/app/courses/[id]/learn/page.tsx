@@ -1,5 +1,9 @@
 import { LearnClient } from './LearnClient';
 
-export default function CourseLearnPage({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: { id: string };
+}
+
+export default function LearnPage({ params }: PageProps) {
   return <LearnClient courseId={params.id} />;
 }
