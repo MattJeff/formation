@@ -11,13 +11,12 @@
 -- ============================================
 -- 1. ACTIVER RLS SUR TOUTES LES TABLES
 -- ============================================
+-- NOTE: enrollments et lesson_progress ont déjà RLS activé dans leurs migrations
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
-ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lesson_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
@@ -189,103 +188,16 @@ USING (
 -- ============================================
 -- 6. POLICIES POUR LA TABLE `enrollments`
 -- ============================================
-
--- Supprimer les policies existantes
-DROP POLICY IF EXISTS "Users can view own enrollments and creators can view course enrollments" ON enrollments;
-DROP POLICY IF EXISTS "Authenticated users can enroll in courses" ON enrollments;
-DROP POLICY IF EXISTS "Users can update own enrollments" ON enrollments;
-DROP POLICY IF EXISTS "Users can delete own enrollments" ON enrollments;
-
--- Les utilisateurs peuvent VOIR leurs propres inscriptions
--- Les créateurs peuvent VOIR les inscriptions à leurs cours
-CREATE POLICY "Users can view own enrollments and creators can view course enrollments"
-ON enrollments FOR SELECT
-USING (
-  auth.uid() = user_id
-  OR
-  EXISTS (
-    SELECT 1 FROM courses
-    WHERE courses.id = enrollments.course_id
-    AND courses.creator_id = auth.uid()
-  )
-);
-
--- Les utilisateurs authentifiés peuvent S'INSCRIRE aux cours
-CREATE POLICY "Authenticated users can enroll in courses"
-ON enrollments FOR INSERT
-WITH CHECK (auth.uid() = user_id);
-
--- Les utilisateurs peuvent MODIFIER leurs propres inscriptions
-CREATE POLICY "Users can update own enrollments"
-ON enrollments FOR UPDATE
-USING (auth.uid() = user_id);
-
--- Les utilisateurs peuvent SUPPRIMER leurs propres inscriptions
-CREATE POLICY "Users can delete own enrollments"
-ON enrollments FOR DELETE
-USING (auth.uid() = user_id);
+-- NOTE: Les policies pour enrollments sont définies dans
+-- supabase/migrations/add_enrollments.sql
+-- Cette section est commentée pour éviter les conflits
 
 -- ============================================
 -- 7. POLICIES POUR LA TABLE `lesson_progress`
 -- ============================================
-
--- Supprimer les policies existantes
-DROP POLICY IF EXISTS "Users can view own progress and creators can view course progress" ON lesson_progress;
-DROP POLICY IF EXISTS "Users can insert own progress" ON lesson_progress;
-DROP POLICY IF EXISTS "Users can update own progress" ON lesson_progress;
-DROP POLICY IF EXISTS "Users can delete own progress" ON lesson_progress;
-
--- Les utilisateurs peuvent VOIR leur propre progression
--- Les créateurs peuvent VOIR la progression sur leurs cours
-CREATE POLICY "Users can view own progress and creators can view course progress"
-ON lesson_progress FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM enrollments
-    WHERE enrollments.id = lesson_progress.enrollment_id
-    AND enrollments.user_id = auth.uid()
-  )
-  OR
-  EXISTS (
-    SELECT 1 FROM enrollments
-    INNER JOIN courses ON courses.id = enrollments.course_id
-    WHERE enrollments.id = lesson_progress.enrollment_id
-    AND courses.creator_id = auth.uid()
-  )
-);
-
--- Les utilisateurs peuvent CRÉER leur progression
-CREATE POLICY "Users can insert own progress"
-ON lesson_progress FOR INSERT
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM enrollments
-    WHERE enrollments.id = enrollment_id
-    AND enrollments.user_id = auth.uid()
-  )
-);
-
--- Les utilisateurs peuvent MODIFIER leur progression
-CREATE POLICY "Users can update own progress"
-ON lesson_progress FOR UPDATE
-USING (
-  EXISTS (
-    SELECT 1 FROM enrollments
-    WHERE enrollments.id = enrollment_id
-    AND enrollments.user_id = auth.uid()
-  )
-);
-
--- Les utilisateurs peuvent SUPPRIMER leur progression
-CREATE POLICY "Users can delete own progress"
-ON lesson_progress FOR DELETE
-USING (
-  EXISTS (
-    SELECT 1 FROM enrollments
-    WHERE enrollments.id = enrollment_id
-    AND enrollments.user_id = auth.uid()
-  )
-);
+-- NOTE: Les policies pour lesson_progress sont définies dans
+-- supabase/migrations/add_lesson_progress.sql
+-- Cette section est commentée pour éviter les conflits
 
 -- ============================================
 -- 8. POLICIES POUR LA TABLE `reviews`

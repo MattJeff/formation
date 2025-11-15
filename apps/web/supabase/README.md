@@ -47,7 +47,9 @@ Tu devrais voir toutes les policies listées.
 
 ## 📋 Policies créées
 
-### 1. **profiles** (4 policies)
+### Tables couvertes par `rls-policies.sql`:
+
+### 1. **profiles** (3 policies)
 - ✅ Tout le monde peut voir les profils publics
 - ✅ Seul l'utilisateur peut modifier son profil
 - ✅ Les utilisateurs peuvent créer leur profil
@@ -65,21 +67,23 @@ Tu devrais voir toutes les policies listées.
 - ✅ Visibles si le cours est publié ou appartient à l'utilisateur
 - ✅ Seul le créateur du cours peut modifier/supprimer
 
-### 5. **enrollments** (4 policies)
-- ✅ L'utilisateur voit ses inscriptions
-- ✅ Le créateur voit les inscriptions à ses cours
-- ✅ Seul l'utilisateur peut modifier ses inscriptions
-
-### 6. **lesson_progress** (4 policies)
-- ✅ L'utilisateur voit sa progression
-- ✅ Le créateur voit la progression sur ses cours
-- ✅ Seul l'utilisateur peut modifier sa progression
-
-### 7. **reviews** (4 policies)
+### 5. **reviews** (4 policies)
 - ✅ Tout le monde voit les avis publiés
 - ✅ Seuls les inscrits peuvent créer un avis
 - ✅ L'utilisateur peut modifier son avis
 - ✅ Le créateur peut modérer (supprimer) les avis
+
+### ℹ️ Tables déjà protégées par leurs migrations:
+
+### 6. **enrollments** (4 policies) - `migrations/add_enrollments.sql`
+- ✅ L'utilisateur voit ses inscriptions
+- ✅ Le créateur voit les inscriptions à ses cours
+- ✅ Seul l'utilisateur peut modifier ses inscriptions
+
+### 7. **lesson_progress** (4 policies) - `migrations/add_lesson_progress.sql`
+- ✅ L'utilisateur voit sa progression
+- ✅ Le créateur voit la progression sur ses cours
+- ✅ Seul l'utilisateur peut modifier sa progression
 
 ## 🧪 Comment tester?
 
