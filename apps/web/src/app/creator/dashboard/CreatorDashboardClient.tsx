@@ -95,14 +95,17 @@ export function CreatorDashboardClient() {
       });
 
       // Calculer le taux d'engagement (leçons complétées / total leçons)
-      const { data: progress } = await supabase
-        .from('lesson_progress')
-        .select('id, is_completed')
-        .in('enrollment_id', enrollments?.map(e => e.id) || []);
+      let engagement = 0;
+      if (enrollments && enrollments.length > 0) {
+        const { data: progress } = await supabase
+          .from('lesson_progress')
+          .select('id, is_completed')
+          .in('enrollment_id', enrollments.map(e => e.id));
 
-      const completedLessons = progress?.filter(p => p.is_completed).length || 0;
-      const totalLessons = progress?.length || 1;
-      const engagement = Math.round((completedLessons / totalLessons) * 100);
+        const completedLessons = progress?.filter(p => p.is_completed).length || 0;
+        const totalLessons = progress?.length || 1;
+        engagement = Math.round((completedLessons / totalLessons) * 100);
+      }
 
       setStats({
         revenue,
