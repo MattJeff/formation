@@ -5,6 +5,7 @@
 -- IMPORTANT: Exécuter ce script dans Supabase SQL Editor
 -- pour activer la sécurité au niveau des lignes (RLS)
 --
+-- Ce script supprime les policies existantes puis les recrée
 -- ============================================
 
 -- ============================================
@@ -22,6 +23,11 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 -- ============================================
 -- 2. POLICIES POUR LA TABLE `profiles`
 -- ============================================
+
+-- Supprimer les policies existantes
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 
 -- Tout le monde peut VOIR tous les profils publics
 CREATE POLICY "Profiles are viewable by everyone"
@@ -41,6 +47,12 @@ WITH CHECK (auth.uid() = id);
 -- ============================================
 -- 3. POLICIES POUR LA TABLE `courses`
 -- ============================================
+
+-- Supprimer les policies existantes
+DROP POLICY IF EXISTS "Published courses are viewable by everyone" ON courses;
+DROP POLICY IF EXISTS "Creators can insert own courses" ON courses;
+DROP POLICY IF EXISTS "Creators can update own courses" ON courses;
+DROP POLICY IF EXISTS "Creators can delete own courses" ON courses;
 
 -- Tout le monde peut VOIR les cours publiés
 CREATE POLICY "Published courses are viewable by everyone"
@@ -65,6 +77,12 @@ USING (auth.uid() = creator_id);
 -- ============================================
 -- 4. POLICIES POUR LA TABLE `sections`
 -- ============================================
+
+-- Supprimer les policies existantes
+DROP POLICY IF EXISTS "Sections are viewable if course is published" ON sections;
+DROP POLICY IF EXISTS "Course creators can insert sections" ON sections;
+DROP POLICY IF EXISTS "Course creators can update sections" ON sections;
+DROP POLICY IF EXISTS "Course creators can delete sections" ON sections;
 
 -- Tout le monde peut VOIR les sections des cours publiés
 CREATE POLICY "Sections are viewable if course is published"
@@ -113,6 +131,12 @@ USING (
 -- ============================================
 -- 5. POLICIES POUR LA TABLE `lessons`
 -- ============================================
+
+-- Supprimer les policies existantes
+DROP POLICY IF EXISTS "Lessons are viewable if course is published" ON lessons;
+DROP POLICY IF EXISTS "Course creators can insert lessons" ON lessons;
+DROP POLICY IF EXISTS "Course creators can update lessons" ON lessons;
+DROP POLICY IF EXISTS "Course creators can delete lessons" ON lessons;
 
 -- Tout le monde peut VOIR les leçons des cours publiés
 CREATE POLICY "Lessons are viewable if course is published"
@@ -166,6 +190,12 @@ USING (
 -- 6. POLICIES POUR LA TABLE `enrollments`
 -- ============================================
 
+-- Supprimer les policies existantes
+DROP POLICY IF EXISTS "Users can view own enrollments and creators can view course enrollments" ON enrollments;
+DROP POLICY IF EXISTS "Authenticated users can enroll in courses" ON enrollments;
+DROP POLICY IF EXISTS "Users can update own enrollments" ON enrollments;
+DROP POLICY IF EXISTS "Users can delete own enrollments" ON enrollments;
+
 -- Les utilisateurs peuvent VOIR leurs propres inscriptions
 -- Les créateurs peuvent VOIR les inscriptions à leurs cours
 CREATE POLICY "Users can view own enrollments and creators can view course enrollments"
@@ -198,6 +228,12 @@ USING (auth.uid() = user_id);
 -- ============================================
 -- 7. POLICIES POUR LA TABLE `lesson_progress`
 -- ============================================
+
+-- Supprimer les policies existantes
+DROP POLICY IF EXISTS "Users can view own progress and creators can view course progress" ON lesson_progress;
+DROP POLICY IF EXISTS "Users can insert own progress" ON lesson_progress;
+DROP POLICY IF EXISTS "Users can update own progress" ON lesson_progress;
+DROP POLICY IF EXISTS "Users can delete own progress" ON lesson_progress;
 
 -- Les utilisateurs peuvent VOIR leur propre progression
 -- Les créateurs peuvent VOIR la progression sur leurs cours
@@ -254,6 +290,12 @@ USING (
 -- ============================================
 -- 8. POLICIES POUR LA TABLE `reviews`
 -- ============================================
+
+-- Supprimer les policies existantes
+DROP POLICY IF EXISTS "Published reviews are viewable by everyone" ON reviews;
+DROP POLICY IF EXISTS "Enrolled users can create reviews" ON reviews;
+DROP POLICY IF EXISTS "Users can update own reviews" ON reviews;
+DROP POLICY IF EXISTS "Users can delete own reviews and creators can delete course reviews" ON reviews;
 
 -- Tout le monde peut VOIR les avis publiés
 CREATE POLICY "Published reviews are viewable by everyone"
