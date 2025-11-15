@@ -23,34 +23,22 @@ interface Profile {
 }
 
 export function useProfile() {
-  console.log('📦 [PROFILE] Hook appelé');
   const { user, loading: authLoading } = useAuth();
-  console.log('👤 [PROFILE] User récupéré du contexte:', user?.email || 'null');
-  console.log('👤 [PROFILE] User ID:', user?.id || 'null');
-  console.log('👤 [PROFILE] User metadata:', user?.user_metadata);
-  console.log('⏳ [PROFILE] Auth loading:', authLoading);
-
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 [PROFILE] useEffect déclenché');
-
     // Si l'auth est en cours de chargement, on attend
     if (authLoading) {
-      console.log('⏳ [PROFILE] Auth en cours de chargement, on attend...');
       return;
     }
 
     // Si pas d'utilisateur après le chargement
     if (!user) {
-      console.log('❌ [PROFILE] Pas d\'utilisateur après chargement auth');
       setProfile(null);
       setLoading(false);
       return;
     }
-
-    console.log('🔍 [PROFILE] Chargement du profil pour:', user.id);
 
     // Construire le profil depuis user_metadata
     const profileData: Profile = {
@@ -63,7 +51,6 @@ export function useProfile() {
       avatar_url: user.user_metadata?.avatar_url,
     };
 
-    console.log('✅ [PROFILE] Profil construit:', profileData);
     setProfile(profileData);
     setLoading(false);
   }, [user, authLoading]);

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Plus, BookOpen, Users, Clock, TrendingUp, Edit, Eye } from 'lucide-react';
@@ -25,52 +26,46 @@ interface Course {
 }
 
 export default function CoursesClient() {
+  const router = useRouter();
+  const { user, session, loading: authLoading } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
+  const hasLoadedCourses = useRef(false);
 
-  const { user } = useAuth();
-  
   useEffect(() => {
-    if (user) {
-      console.log('📚 [COURSES] Chargement des cours pour:', user.email);
+    if (authLoading) return;
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (session && !hasLoadedCourses.current) {
+      hasLoadedCourses.current = true;
       loadCourses();
     }
-  }, [user]);
+  }, [user, session, authLoading, router]);
 
   const loadCourses = async () => {
     try {
       setLoading(true);
-      console.log('🔄 [COURSES] Début du chargement...');
-      
-      // Récupérer la session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        console.error('❌ [COURSES] Pas de session');
-        setLoading(false);
-        return;
-      }
-      
-      console.log('✅ [COURSES] Session OK, appel API...');
 
-      // Récupérer les cours du créateur
-      const response = await fetch('/api/courses/my-courses', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
+      // Utiliser directement Supabase au lieu de l'API route
+      const { data: courses, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('creator_id', user?.id)
+        .order('created_at', { ascending: false });
 
-      if (!response.ok) {
-        console.error('❌ Erreur:', response.status);
+      if (error) {
+        console.error('Erreur chargement cours:', error);
         return;
       }
 
-      const data = await response.json();
-      console.log('✅ Cours récupérés:', data.courses);
-      setCourses(data.courses || []);
+      setCourses(courses || []);
     } catch (error) {
-      console.error('❌ Erreur chargement cours:', error);
+      console.error('Erreur chargement cours:', error);
     } finally {
       setLoading(false);
     }

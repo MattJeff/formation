@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/AuthProvider';
 import { ArrowLeft, Upload, X, Plus, Save, ArrowRight, Loader2, Video, FileText, Link as LinkIcon, File, Check, AlertCircle, RefreshCw } from 'lucide-react';
 
 type Step = 'basic' | 'curriculum' | 'pricing';
@@ -518,9 +519,11 @@ interface NewCourseClientProps {
 
 export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientProps = {}) {
   const router = useRouter();
+  const { user, session, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>('basic');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(mode === 'edit');
+  const hasLoadedCourse = useRef(false);
 
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -544,30 +547,57 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
   // Charger les données en mode édition
   useEffect(() => {
-    if (mode === 'edit' && courseId) {
-      loadCourseData();
+    if (authLoading) return;
+
+    if (!user) {
+      router.push('/login');
+      return;
     }
-  }, [mode, courseId]);
+
+    if (mode === 'edit' && courseId && session && !hasLoadedCourse.current) {
+      hasLoadedCourse.current = true;
+      loadCourseData();
+    } else if (mode === 'create') {
+      setLoading(false);
+    }
+  }, [mode, courseId, user, session, authLoading, router]);
 
   const loadCourseData = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Utiliser directement Supabase au lieu de l'API route
+      const { data: course, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          sections(
+            id,
+            title,
+            order_index,
+            lessons(
+              id,
+              title,
+              type,
+              duration,
+              description,
+              content,
+              file_url,
+              video_url,
+              order_index
+            )
+          )
+        `)
+        .eq('id', courseId)
+        .eq('creator_id', user?.id)
+        .single();
 
-      if (!session) {
-        router.push('/login');
+      if (error) {
+        console.error('Error loading course:', error);
+        alert('Impossible de charger le cours');
+        router.push('/creator/dashboard');
         return;
       }
 
-      const response = await fetch(`/api/courses/${courseId}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.course) {
-        const course = data.course;
+      if (course) {
 
         // Pré-remplir le formulaire
         setFormData({
@@ -608,9 +638,6 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
             })
           })));
         }
-      } else {
-        alert('❌ Impossible de charger le cours');
-        router.push('/creator/dashboard');
       }
     } catch (error) {
       console.error('Error loading course:', error);
@@ -908,9 +935,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
       console.log(`📤 Envoi de la requête ${method} ${url} (brouillon)...`);
 
-      // Récupérer le token d'authentification
-      const { data: { session } } = await supabase.auth.getSession();
-
+      // Vérifier qu'on a une session
       if (!session) {
         alert('❌ Vous devez être connecté pour sauvegarder un cours');
         setSaving(false);
@@ -1037,9 +1062,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
 
       console.log(`📤 Envoi de la requête ${method} ${url}...`);
 
-      // Récupérer le token d'authentification
-      const { data: { session } } = await supabase.auth.getSession();
-
+      // Vérifier qu'on a une session
       if (!session) {
         alert('❌ Vous devez être connecté pour publier un cours');
         setSaving(false);
@@ -1396,7 +1419,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

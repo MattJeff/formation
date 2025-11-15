@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/AuthProvider';
 import {
   PlayCircle,
   FileText,
@@ -16,7 +19,8 @@ import {
   Star,
   Globe,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Edit
 } from 'lucide-react';
 
 interface CourseDetailClientProps {
@@ -24,32 +28,82 @@ interface CourseDetailClientProps {
 }
 
 export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [hasProgress, setHasProgress] = useState(false);
+  const hasLoadedCourse = useRef(false);
 
   useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        const response = await fetch(`/api/courses/${courseId}`);
-        const data = await response.json();
-
-        if (response.ok) {
-          setCourse(data.course);
-          // Expand all sections by default
-          setExpandedSections(new Set(data.course.sections?.map((s: any) => s.id) || []));
-        } else {
-          console.error('Course not found');
-        }
-      } catch (error) {
-        console.error('Error fetching course:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCourse();
+    if (!hasLoadedCourse.current) {
+      hasLoadedCourse.current = true;
+      fetchCourse();
+    }
   }, [courseId]);
+
+  useEffect(() => {
+    if (authLoading || !course) return;
+    if (user) {
+      checkEnrollment();
+    }
+  }, [user, course, authLoading]);
+
+  const fetchCourse = async () => {
+    try {
+      // Utiliser Supabase directement
+      const { data: courseData, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          profiles:creator_id (first_name, last_name, avatar_url),
+          sections(
+            id,
+            title,
+            order_index,
+            lessons(id, title, type, duration, order_index)
+          )
+        `)
+        .eq('id', courseId)
+        .single();
+
+      if (error || !courseData) {
+        console.error('Course not found');
+        setLoading(false);
+        return;
+      }
+
+      setCourse(courseData);
+      setExpandedSections(new Set(courseData.sections?.map((s: any) => s.id) || []));
+    } catch (error) {
+      console.error('Error fetching course:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkEnrollment = async () => {
+    if (!user) return;
+
+    try {
+      const { data: enrollment } = await supabase
+        .from('enrollments')
+        .select('id, progress')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId)
+        .single();
+
+      if (enrollment) {
+        setIsEnrolled(true);
+        setHasProgress((enrollment.progress || 0) > 0);
+      }
+    } catch (error) {
+      // Pas inscrit
+      setIsEnrolled(false);
+    }
+  };
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
@@ -63,7 +117,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
     });
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -161,20 +215,89 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                   />
                 )}
                 <div className="p-6">
-                  <div className="mb-4 flex items-baseline gap-2">
-                    <span className="text-3xl font-bold">{course.price}€</span>
-                    {course.compare_price && (
-                      <span className="text-lg text-muted-foreground line-through">
-                        {course.compare_price}€
-                      </span>
-                    )}
-                  </div>
-                  <button className="mb-3 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90">
-                    S'inscrire maintenant
-                  </button>
-                  <p className="mb-4 text-center text-xs text-muted-foreground">
-                    Garantie satisfait ou remboursé 30 jours
-                  </p>
+                  {!user && (
+                    <>
+                      <div className="mb-4 flex items-baseline gap-2">
+                        <span className="text-3xl font-bold">{course.price}€</span>
+                        {course.compare_price && (
+                          <span className="text-lg text-muted-foreground line-through">
+                            {course.compare_price}€
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => router.push('/login')}
+                        className="mb-3 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+                      >
+                        {course.price === 0 ? "S'inscrire gratuitement" : "Acheter maintenant"}
+                      </button>
+
+                      <p className="mb-4 text-center text-xs text-muted-foreground">
+                        Garantie satisfait ou remboursé 30 jours
+                      </p>
+                    </>
+                  )}
+
+                  {user && course.creator_id !== user?.id && (
+                    <>
+                      <div className="mb-4 flex items-baseline gap-2">
+                        <span className="text-3xl font-bold">{course.price}€</span>
+                        {course.compare_price && (
+                          <span className="text-lg text-muted-foreground line-through">
+                            {course.compare_price}€
+                          </span>
+                        )}
+                      </div>
+
+                      {isEnrolled ? (
+                        <Link
+                          href={`/courses/${courseId}/learn`}
+                          className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+                        >
+                          <PlayCircle className="h-5 w-5" />
+                          {hasProgress ? 'Continuer le cours' : 'Commencer le cours'}
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => router.push(course.price === 0 ? `/courses/${courseId}/enroll` : `/courses/${courseId}/checkout`)}
+                          className="mb-3 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+                        >
+                          {course.price === 0 ? "S'inscrire gratuitement" : "Acheter maintenant"}
+                        </button>
+                      )}
+
+                      <p className="mb-4 text-center text-xs text-muted-foreground">
+                        Garantie satisfait ou remboursé 30 jours
+                      </p>
+                    </>
+                  )}
+
+                  {course.creator_id === user?.id && (
+                    <>
+                      <div className="mb-4 rounded-lg bg-primary/10 px-4 py-3 text-center">
+                        <p className="text-sm font-medium text-primary">
+                          👨‍🏫 Vous êtes le créateur de ce cours
+                        </p>
+                      </div>
+
+                      <Link
+                        href={`/courses/${courseId}/learn`}
+                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+                      >
+                        <PlayCircle className="h-5 w-5" />
+                        Prévisualiser le cours
+                      </Link>
+
+                      <Link
+                        href={`/creator/courses/${courseId}/edit`}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary bg-transparent py-3 font-semibold text-primary hover:bg-primary/10"
+                      >
+                        <Edit className="h-5 w-5" />
+                        Modifier le cours
+                      </Link>
+                    </>
+                  )}
 
                   <div className="space-y-3 border-t border-border pt-4">
                     <h3 className="font-semibold">Ce cours inclut :</h3>

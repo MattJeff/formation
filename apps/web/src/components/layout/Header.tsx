@@ -15,8 +15,6 @@ export function Header() {
   const loading = authLoading || profileLoading;
   const isCreator = profile?.role === 'creator';
   const isLearner = profile?.role === 'learner';
-  
-  console.log('📡 [HEADER] Render - User:', user?.email, 'Role:', profile?.role);
 
   // Afficher un skeleton pendant le chargement
   if (loading) {
@@ -35,7 +33,6 @@ export function Header() {
   }
 
   const handleLogout = async () => {
-    console.log('🚪 [HEADER] Déconnexion...');
     await supabase.auth.signOut();
     router.push('/');
   };

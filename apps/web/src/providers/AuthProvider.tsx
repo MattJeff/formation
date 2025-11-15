@@ -9,7 +9,7 @@
  * Pas de boucles, pas de complexité.
  */
 
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -31,37 +31,22 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true); // true au départ pour charger la session
-  const initializedRef = useRef(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Ne s'exécuter qu'une seule fois
-    if (initializedRef.current) {
-      console.log('✅ [AUTH] Déjà initialisé');
-      return;
-    }
-
-    console.log('🔐 [AUTH] Initialisation...');
-    initializedRef.current = true;
-
     // 1. Récupérer la session existante
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔐 [AUTH] Session initiale:', session?.user?.email || 'Aucune');
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     // 2. Écouter les changements d'auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔐 [AUTH] Événement:', event);
-      console.log('🔐 [AUTH] User:', session?.user?.email || 'Aucun');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
-
-    console.log('✅ [AUTH] Listener actif');
 
     return () => {
       subscription.unsubscribe();

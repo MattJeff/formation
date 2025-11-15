@@ -1,81 +1,68 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/AuthProvider';
 import { Header } from '@/components/layout/Header';
 import { DollarSign, Users, TrendingUp, BookOpen, Plus, Star, Clock, Loader2 } from 'lucide-react';
 
 export function CreatorDashboardClient() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, session, loading: authLoading } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const hasLoadedCourses = useRef(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+    // Attendre que l'auth soit chargée
+    if (authLoading) return;
 
-      if (error || !currentUser) {
-        router.push('/login');
-        return;
-      }
+    // Si pas d'utilisateur, rediriger vers login
+    if (!user) {
+      router.push('/login');
+      return;
+    }
 
-      // Si c'est un apprenant, rediriger vers le dashboard apprenant
-      if (currentUser.user_metadata?.role === 'learner') {
-        router.push('/dashboard');
-        return;
-      }
+    // Si c'est un apprenant, rediriger vers le dashboard apprenant
+    if (user.user_metadata?.role === 'learner') {
+      router.push('/dashboard');
+      return;
+    }
 
-      setUser(currentUser);
-      setLoading(false);
+    // Charger les cours du créateur (une seule fois)
+    if (session && !hasLoadedCourses.current) {
+      hasLoadedCourses.current = true;
+      loadCourses();
+    }
+  }, [user, session, authLoading, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
-      // Charger les cours du créateur
-      loadCourses(currentUser);
-    };
-
-    checkAuth();
-  }, [router]);
-
-  const loadCourses = async (currentUser: any) => {
-    console.log('📚 [COURSES] Chargement des cours pour:', currentUser.email);
+  const loadCourses = async () => {
     setLoadingCourses(true);
-    console.log('🔄 [COURSES] Début du chargement...');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Utiliser directement Supabase au lieu de l'API route
+      const { data: courses, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('creator_id', user?.id)
+        .order('created_at', { ascending: false });
 
-      if (!session) {
-        console.error('❌ [COURSES] Pas de session');
+      if (error) {
+        console.error('Error loading courses:', error);
         return;
       }
 
-      console.log('✅ [COURSES] Session OK, appel API...');
-
-      const response = await fetch('/api/courses/my-courses', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.courses) {
-        console.log('✅ Cours récupérés:', data.courses);
-        setCourses(data.courses);
-      } else {
-        console.error('❌ Erreur récupération cours:', data);
-      }
+      setCourses(courses || []);
     } catch (error) {
-      console.error('❌ Erreur:', error);
+      console.error('Error loading courses:', error);
     } finally {
       setLoadingCourses(false);
     }
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

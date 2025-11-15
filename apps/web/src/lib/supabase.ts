@@ -18,8 +18,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('❌ Variables Supabase manquantes dans .env.local');
 }
 
-console.log('✅ [SUPABASE] Initialisation du client');
-
 // Créer le client (une seule fois)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -27,5 +25,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
   },
 });
-
-console.log('✅ [SUPABASE] Client créé avec succès');

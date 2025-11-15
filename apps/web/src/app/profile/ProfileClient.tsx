@@ -1,34 +1,76 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/AuthProvider';
 import { Header } from '@/components/layout/Header';
 import { Settings, Award, BookOpen, Target, Loader2 } from 'lucide-react';
 
 export function ProfileClient() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth();
+  const [stats, setStats] = useState({ courses: 0, students: 0, duration: 0 });
   const [loading, setLoading] = useState(true);
+  const hasLoadedStats = useRef(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      if (!currentUser) {
-        router.push('/login');
-        return;
+    if (authLoading) return;
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (!hasLoadedStats.current) {
+      hasLoadedStats.current = true;
+      loadStats();
+    }
+  }, [user, authLoading, router]);
+
+  const loadStats = async () => {
+    try {
+      const userRole = user?.user_metadata?.role;
+
+      if (userRole === 'creator') {
+        // Charger les stats du créateur
+        const { data: courses } = await supabase
+          .from('courses')
+          .select('id')
+          .eq('creator_id', user?.id);
+
+        const { data: enrollments } = await supabase
+          .from('enrollments')
+          .select('id')
+          .in('course_id', courses?.map(c => c.id) || []);
+
+        setStats({
+          courses: courses?.length || 0,
+          students: enrollments?.length || 0,
+          duration: 0
+        });
+      } else {
+        // Charger les stats de l'apprenant
+        const { data: enrollments } = await supabase
+          .from('enrollments')
+          .select('id')
+          .eq('user_id', user?.id);
+
+        setStats({
+          courses: enrollments?.length || 0,
+          students: 0,
+          duration: 0
+        });
       }
-
-      setUser(currentUser);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
-    checkAuth();
-  }, [router]);
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -78,21 +120,21 @@ export function ProfileClient() {
         <div className="grid gap-6 md:grid-cols-3">
           <div className="rounded-lg border border-border bg-card p-6">
             <BookOpen className="mb-4 h-12 w-12 text-blue-500" />
-            <h3 className="mb-2 text-2xl font-bold">0</h3>
+            <h3 className="mb-2 text-2xl font-bold">{stats.courses}</h3>
             <p className="text-muted-foreground">
               {userRole === 'creator' ? 'Cours créés' : 'Cours suivis'}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card p-6">
             <Award className="mb-4 h-12 w-12 text-yellow-500" />
-            <h3 className="mb-2 text-2xl font-bold">0</h3>
+            <h3 className="mb-2 text-2xl font-bold">{userRole === 'creator' ? stats.students : 0}</h3>
             <p className="text-muted-foreground">
               {userRole === 'creator' ? 'Étudiants' : 'Certificats obtenus'}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card p-6">
             <Target className="mb-4 h-12 w-12 text-green-500" />
-            <h3 className="mb-2 text-2xl font-bold">0h</h3>
+            <h3 className="mb-2 text-2xl font-bold">{stats.duration}h</h3>
             <p className="text-muted-foreground">
               {userRole === 'creator' ? 'Contenu créé' : "Temps d'apprentissage"}
             </p>
