@@ -35,6 +35,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [hasProgress, setHasProgress] = useState(false);
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
   const hasLoadedCourse = useRef(false);
 
   useEffect(() => {
@@ -53,6 +54,8 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
   const fetchCourse = async () => {
     try {
+      console.log('📚 [COURSE DETAIL] Chargement du cours:', courseId);
+
       // Utiliser Supabase directement
       const { data: courseData, error } = await supabase
         .from('courses')
@@ -70,15 +73,23 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
         .single();
 
       if (error || !courseData) {
-        console.error('Course not found');
+        console.error('❌ [COURSE DETAIL] Cours non trouvé:', error);
         setLoading(false);
         return;
       }
 
+      // Charger le nombre d'inscriptions
+      const { count: enrollmentsCount } = await supabase
+        .from('enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('course_id', courseId);
+
+      console.log('✅ [COURSE DETAIL] Cours chargé - Inscriptions:', enrollmentsCount);
+      setEnrollmentCount(enrollmentsCount || 0);
       setCourse(courseData);
       setExpandedSections(new Set(courseData.sections?.map((s: any) => s.id) || []));
     } catch (error) {
-      console.error('Error fetching course:', error);
+      console.error('❌ [COURSE DETAIL] Erreur chargement cours:', error);
     } finally {
       setLoading(false);
     }
@@ -171,13 +182,15 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
               <p className="mb-6 text-xl text-muted-foreground">{course.subtitle}</p>
 
               <div className="mb-6 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                  <span>4.8 (1,234 avis)</span>
-                </div>
+                {course.rating && (
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                    <span>{course.rating} ({course.review_count || 0} avis)</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  <span>5,678 étudiants</span>
+                  <span>{enrollmentCount} étudiant{enrollmentCount > 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />

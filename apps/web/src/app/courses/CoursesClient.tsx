@@ -2,31 +2,56 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { Search, Filter } from 'lucide-react';
 
 export function CoursesClient() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const response = await fetch('/api/courses');
-        const data = await response.json();
+    console.log('🔄 [PUBLIC COURSES] useEffect - hasAttempted:', hasAttemptedLoad);
 
-        if (response.ok && data.courses) {
-          setCourses(data.courses);
-        }
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-      } finally {
-        setLoading(false);
+    if (!hasAttemptedLoad) {
+      console.log('🚀 [PUBLIC COURSES] Déclenchement du chargement');
+      setHasAttemptedLoad(true);
+      fetchCourses();
+    }
+  }, [hasAttemptedLoad]);
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      console.log('📚 [PUBLIC COURSES] Chargement des cours publics');
+
+      const { data: courses, error} = await supabase
+        .from('courses')
+        .select(`
+          *,
+          profiles:creator_id (
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ [PUBLIC COURSES] Erreur chargement cours:', error);
+        return;
       }
-    };
 
-    fetchCourses();
-  }, []);
+      console.log('✅ [PUBLIC COURSES] Cours chargés:', courses?.length || 0);
+      setCourses(courses || []);
+    } catch (error) {
+      console.error('❌ [PUBLIC COURSES] Erreur:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -114,9 +139,11 @@ export function CoursesClient() {
                     {course.profiles && (
                       <span>Par {course.profiles.first_name} {course.profiles.last_name}</span>
                     )}
-                    <span className="flex items-center gap-1">
-                      ⭐ 4.8
-                    </span>
+                    {course.rating && (
+                      <span className="flex items-center gap-1">
+                        ⭐ {course.rating}
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>
