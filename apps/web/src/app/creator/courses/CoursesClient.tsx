@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
@@ -27,13 +27,15 @@ interface Course {
 
 export default function CoursesClient() {
   const router = useRouter();
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
-  const hasLoadedCourses = useRef(false);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 [COURSES] useEffect appelé - authLoading:', authLoading, 'user:', !!user, 'userId:', user?.id, 'hasAttempted:', hasAttemptedLoad);
+
     if (authLoading) return;
 
     if (!user) {
@@ -41,15 +43,18 @@ export default function CoursesClient() {
       return;
     }
 
-    if (session && !hasLoadedCourses.current) {
-      hasLoadedCourses.current = true;
+    // Charger UNE SEULE FOIS
+    if (user.id && !hasAttemptedLoad) {
+      console.log('🚀 [COURSES] Déclenchement du chargement');
+      setHasAttemptedLoad(true);
       loadCourses();
     }
-  }, [user, session, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading, hasAttemptedLoad]);
 
   const loadCourses = async () => {
     try {
       setLoading(true);
+      console.log('📚 [COURSES] Chargement des cours pour:', user?.id);
 
       // Utiliser directement Supabase au lieu de l'API route
       const { data: courses, error } = await supabase
@@ -59,13 +64,14 @@ export default function CoursesClient() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erreur chargement cours:', error);
+        console.error('❌ [COURSES] Erreur chargement cours:', error);
         return;
       }
 
+      console.log('✅ [COURSES] Cours chargés:', courses?.length || 0, 'cours');
       setCourses(courses || []);
     } catch (error) {
-      console.error('Erreur chargement cours:', error);
+      console.error('❌ [COURSES] Erreur chargement cours:', error);
     } finally {
       setLoading(false);
     }

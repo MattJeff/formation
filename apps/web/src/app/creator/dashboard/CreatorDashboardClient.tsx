@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -10,12 +10,14 @@ import { DollarSign, Users, TrendingUp, BookOpen, Plus, Star, Clock, Loader2 } f
 
 export function CreatorDashboardClient() {
   const router = useRouter();
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
-  const hasLoadedCourses = useRef(false);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 [DASHBOARD] useEffect appelé - authLoading:', authLoading, 'user:', !!user, 'userId:', user?.id, 'hasAttempted:', hasAttemptedLoad);
+
     // Attendre que l'auth soit chargée
     if (authLoading) return;
 
@@ -31,15 +33,17 @@ export function CreatorDashboardClient() {
       return;
     }
 
-    // Charger les cours du créateur (une seule fois)
-    if (session && !hasLoadedCourses.current) {
-      hasLoadedCourses.current = true;
+    // Charger les cours du créateur UNE SEULE FOIS
+    if (user.id && !hasAttemptedLoad) {
+      console.log('🚀 [DASHBOARD] Déclenchement du chargement');
+      setHasAttemptedLoad(true);
       loadCourses();
     }
-  }, [user, session, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading, hasAttemptedLoad]);
 
   const loadCourses = async () => {
     setLoadingCourses(true);
+    console.log('📊 [DASHBOARD] Chargement des cours pour:', user?.id);
 
     try {
       // Utiliser directement Supabase au lieu de l'API route
@@ -50,13 +54,14 @@ export function CreatorDashboardClient() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading courses:', error);
+        console.error('❌ [DASHBOARD] Error loading courses:', error);
         return;
       }
 
+      console.log('✅ [DASHBOARD] Cours chargés:', courses?.length || 0, 'cours');
       setCourses(courses || []);
     } catch (error) {
-      console.error('Error loading courses:', error);
+      console.error('❌ [DASHBOARD] Error loading courses:', error);
     } finally {
       setLoadingCourses(false);
     }

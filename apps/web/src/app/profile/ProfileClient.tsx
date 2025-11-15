@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -12,10 +12,12 @@ export function ProfileClient() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({ courses: 0, students: 0, duration: 0 });
-  const [loading, setLoading] = useState(true);
-  const hasLoadedStats = useRef(false);
+  const [loading, setLoading] = useState(false);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 [PROFILE] useEffect appelé - authLoading:', authLoading, 'user:', !!user, 'userId:', user?.id, 'hasAttempted:', hasAttemptedLoad);
+
     if (authLoading) return;
 
     if (!user) {
@@ -23,27 +25,42 @@ export function ProfileClient() {
       return;
     }
 
-    if (!hasLoadedStats.current) {
-      hasLoadedStats.current = true;
+    // Charger UNE SEULE FOIS
+    if (user.id && !hasAttemptedLoad) {
+      console.log('🚀 [PROFILE] Déclenchement du chargement');
+      setHasAttemptedLoad(true);
       loadStats();
     }
-  }, [user, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading, hasAttemptedLoad]);
 
   const loadStats = async () => {
     try {
       const userRole = user?.user_metadata?.role;
+      console.log('👤 [PROFILE] Chargement stats pour:', user?.id, 'Role:', userRole);
 
       if (userRole === 'creator') {
         // Charger les stats du créateur
-        const { data: courses } = await supabase
+        const { data: courses, error: coursesError } = await supabase
           .from('courses')
           .select('id')
           .eq('creator_id', user?.id);
 
-        const { data: enrollments } = await supabase
+        if (coursesError) {
+          console.error('❌ [PROFILE] Erreur chargement cours:', coursesError);
+        } else {
+          console.log('✅ [PROFILE] Cours trouvés:', courses?.length || 0);
+        }
+
+        const { data: enrollments, error: enrollmentsError } = await supabase
           .from('enrollments')
           .select('id')
           .in('course_id', courses?.map(c => c.id) || []);
+
+        if (enrollmentsError) {
+          console.error('❌ [PROFILE] Erreur chargement inscriptions:', enrollmentsError);
+        } else {
+          console.log('✅ [PROFILE] Inscriptions trouvées:', enrollments?.length || 0);
+        }
 
         setStats({
           courses: courses?.length || 0,
@@ -52,10 +69,16 @@ export function ProfileClient() {
         });
       } else {
         // Charger les stats de l'apprenant
-        const { data: enrollments } = await supabase
+        const { data: enrollments, error } = await supabase
           .from('enrollments')
           .select('id')
           .eq('user_id', user?.id);
+
+        if (error) {
+          console.error('❌ [PROFILE] Erreur chargement inscriptions:', error);
+        } else {
+          console.log('✅ [PROFILE] Inscriptions trouvées:', enrollments?.length || 0);
+        }
 
         setStats({
           courses: enrollments?.length || 0,
@@ -64,7 +87,7 @@ export function ProfileClient() {
         });
       }
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('❌ [PROFILE] Error loading stats:', error);
     } finally {
       setLoading(false);
     }
