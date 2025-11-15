@@ -101,14 +101,14 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
     try {
       const { data: enrollment } = await supabase
         .from('enrollments')
-        .select('id, progress')
+        .select('id, progress_percentage')
         .eq('user_id', user.id)
         .eq('course_id', courseId)
         .single();
 
       if (enrollment) {
         setIsEnrolled(true);
-        setHasProgress((enrollment.progress || 0) > 0);
+        setHasProgress((enrollment.progress_percentage || 0) > 0);
       }
     } catch (error) {
       // Pas inscrit

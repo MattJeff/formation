@@ -1,19 +1,83 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/providers/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
 import { Header } from '@/components/layout/Header';
-import { BookOpen, Trophy, Target, TrendingUp, Loader2 } from 'lucide-react';
+import { BookOpen, Trophy, Target, TrendingUp, Loader2, PlayCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+
+interface EnrollmentWithCourse {
+  id: string;
+  progress_percentage: number;
+  created_at: string;
+  courses: {
+    id: string;
+    title: string;
+    description: string;
+    cover_image: string;
+    price: number;
+    profiles: {
+      first_name: string;
+      last_name: string;
+    };
+  };
+}
 
 export function DashboardClient() {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  
+  const [enrollments, setEnrollments] = useState<EnrollmentWithCourse[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
   const loading = authLoading || profileLoading;
   const isCreator = profile?.role === 'creator';
-  
+
   console.log('📊 [DASHBOARD] Render - User:', user?.email, 'Role:', profile?.role);
+
+  useEffect(() => {
+    if (!user || isCreator) return;
+    loadEnrollments();
+  }, [user, isCreator]);
+
+  const loadEnrollments = async () => {
+    if (!user) return;
+
+    try {
+      console.log('📚 [DASHBOARD] Chargement des inscriptions...');
+
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select(`
+          id,
+          progress_percentage,
+          created_at,
+          courses:course_id (
+            id,
+            title,
+            description,
+            cover_image,
+            price,
+            profiles:creator_id (first_name, last_name)
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ [DASHBOARD] Erreur chargement:', error);
+        return;
+      }
+
+      console.log('✅ [DASHBOARD] Inscriptions chargées:', data?.length || 0);
+      setEnrollments(data as EnrollmentWithCourse[] || []);
+    } catch (error) {
+      console.error('❌ [DASHBOARD] Erreur:', error);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
 
   // Afficher le loader pendant le chargement
   if (loading) {
@@ -55,14 +119,21 @@ export function DashboardClient() {
       </div>
     );
   }
-  
+
   console.log('✅ [DASHBOARD] Affichage du dashboard learner');
 
+  // Calculer les stats
+  const inProgressCourses = enrollments.filter(e => e.progress_percentage > 0 && e.progress_percentage < 100);
+  const completedCourses = enrollments.filter(e => e.progress_percentage === 100);
+  const avgProgress = enrollments.length > 0
+    ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / enrollments.length)
+    : 0;
+
   const stats = [
-    { label: 'Cours en cours', value: '0', icon: BookOpen, color: 'text-blue-500' },
-    { label: 'Cours terminés', value: '0', icon: Trophy, color: 'text-yellow-500' },
-    { label: 'Heures apprises', value: '0', icon: Target, color: 'text-green-500' },
-    { label: 'Progression', value: '0%', icon: TrendingUp, color: 'text-purple-500' },
+    { label: 'Cours en cours', value: String(inProgressCourses.length), icon: BookOpen, color: 'text-blue-500' },
+    { label: 'Cours terminés', value: String(completedCourses.length), icon: Trophy, color: 'text-yellow-500' },
+    { label: 'Cours total', value: String(enrollments.length), icon: Target, color: 'text-green-500' },
+    { label: 'Progression', value: `${avgProgress}%`, icon: TrendingUp, color: 'text-purple-500' },
   ];
 
   return (
@@ -93,89 +164,106 @@ export function DashboardClient() {
           ))}
         </div>
 
-        {/* Section: Commencer l'apprentissage */}
-        <div className="mb-8 rounded-lg border border-border bg-card p-8 text-center">
-          <h2 className="mb-4 text-2xl font-bold">Commencez votre apprentissage</h2>
-          <p className="mb-6 text-muted-foreground">
-            Vous n'avez pas encore de cours. Explorez notre catalogue et commencez à apprendre !
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link
-              href="/courses"
-              className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Explorer les cours
-            </Link>
-            <Link
-              href="/categories"
-              className="rounded-lg border border-border px-6 py-3 font-semibold hover:bg-accent"
-            >
-              Parcourir par catégorie
-            </Link>
+        {loadingCourses ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        </div>
-
-        {/* Section: Cours recommandés */}
-        <div>
-          <h2 className="mb-4 text-2xl font-bold">Cours recommandés pour vous</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                id: 1,
-                title: 'Maîtriser React et Next.js',
-                instructor: 'John Doe',
-                price: '99.99€',
-                thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
-                rating: 4.8,
-                students: 1234,
-              },
-              {
-                id: 2,
-                title: 'Python pour la Data Science',
-                instructor: 'Jane Smith',
-                price: '79.99€',
-                thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400',
-                rating: 4.9,
-                students: 2156,
-              },
-              {
-                id: 3,
-                title: 'Design UX/UI Moderne',
-                instructor: 'Mike Johnson',
-                price: '89.99€',
-                thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400',
-                rating: 4.7,
-                students: 987,
-              },
-            ].map((course) => (
-              <Link
-                key={course.id}
-                href={`/courses/${course.id}`}
-                className="group rounded-lg border border-border bg-card overflow-hidden hover:border-primary transition-all"
-              >
-                <img
-                  src={course.thumbnail}
-                  alt={course.title}
-                  className="aspect-video w-full object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="mb-2 font-semibold group-hover:text-primary">
-                    {course.title}
-                  </h3>
-                  <p className="mb-2 text-sm text-muted-foreground">{course.instructor}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-sm">
-                      <span className="text-yellow-500">★</span>
-                      <span className="font-medium">{course.rating}</span>
-                      <span className="text-muted-foreground">({course.students})</span>
+        ) : enrollments.length === 0 ? (
+          <>
+            {/* Section: Commencer l'apprentissage */}
+            <div className="mb-8 rounded-lg border border-border bg-card p-8 text-center">
+              <h2 className="mb-4 text-2xl font-bold">Commencez votre apprentissage</h2>
+              <p className="mb-6 text-muted-foreground">
+                Vous n'avez pas encore de cours. Explorez notre catalogue et commencez à apprendre !
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link
+                  href="/courses"
+                  className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Explorer les cours
+                </Link>
+                <Link
+                  href="/categories"
+                  className="rounded-lg border border-border px-6 py-3 font-semibold hover:bg-accent"
+                >
+                  Parcourir par catégorie
+                </Link>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Section: Mes cours */}
+            <div className="mb-8">
+              <h2 className="mb-4 text-2xl font-bold">Mes cours</h2>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {enrollments.map((enrollment) => (
+                  <Link
+                    key={enrollment.id}
+                    href={`/learn/${enrollment.courses.id}`}
+                    className="group rounded-lg border border-border bg-card overflow-hidden hover:border-primary transition-all"
+                  >
+                    <div className="relative">
+                      <img
+                        src={enrollment.courses.cover_image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'}
+                        alt={enrollment.courses.title}
+                        className="aspect-video w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <PlayCircle className="h-16 w-16 text-white" />
+                      </div>
+                      {enrollment.progress_percentage > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
+                          <div
+                            className="h-full bg-primary"
+                            style={{ width: `${enrollment.progress_percentage}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <span className="font-bold text-primary">{course.price}</span>
-                  </div>
-                </div>
+                    <div className="p-4">
+                      <h3 className="mb-2 font-semibold group-hover:text-primary line-clamp-2">
+                        {enrollment.courses.title}
+                      </h3>
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        {enrollment.courses.profiles?.first_name} {enrollment.courses.profiles?.last_name}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                          {enrollment.progress_percentage === 100 ? (
+                            <span className="text-green-500 font-medium">✓ Terminé</span>
+                          ) : enrollment.progress_percentage > 0 ? (
+                            <span className="text-primary font-medium">
+                              {enrollment.progress_percentage}% complété
+                            </span>
+                          ) : (
+                            <span>Commencer</span>
+                          )}
+                        </div>
+                        {enrollment.courses.price === 0 && (
+                          <span className="text-xs bg-green-500/10 text-green-500 px-2 py-1 rounded">
+                            Gratuit
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Section: Explorer plus de cours */}
+            <div className="text-center">
+              <Link
+                href="/courses"
+                className="inline-block rounded-lg border border-border px-6 py-3 font-semibold hover:bg-accent"
+              >
+                Explorer plus de cours
               </Link>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
