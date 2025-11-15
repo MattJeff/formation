@@ -150,11 +150,8 @@ export function LearnClient({ courseId }: LearnClientProps) {
       const { data, error } = await supabase
         .from('lesson_comments')
         .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles:user_id (first_name, last_name, avatar_url)
+          *,
+          profiles!lesson_comments_user_id_fkey (first_name, last_name, avatar_url)
         `)
         .eq('lesson_id', lessonId)
         .eq('course_id', courseId)
