@@ -353,22 +353,22 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
       <div className="container mx-auto px-4 py-12">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Left: Main Info */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-8 min-w-0">
             {/* Description */}
-            <div>
+            <div className="min-w-0">
               <h2 className="mb-4 text-2xl font-bold">Description</h2>
-              <p className="whitespace-pre-line text-muted-foreground">{course.description}</p>
+              <p className="whitespace-pre-line break-words text-muted-foreground overflow-wrap-anywhere">{course.description}</p>
             </div>
 
             {/* Learning Objectives */}
             {course.learning_objectives && course.learning_objectives.length > 0 && (
-              <div>
+              <div className="min-w-0">
                 <h2 className="mb-4 text-2xl font-bold">Ce que vous apprendrez</h2>
                 <div className="grid gap-3 md:grid-cols-2">
                   {course.learning_objectives.map((objective: string, index: number) => (
-                    <div key={index} className="flex gap-3">
+                    <div key={index} className="flex gap-3 min-w-0">
                       <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-500" />
-                      <span>{objective}</span>
+                      <span className="break-words min-w-0">{objective}</span>
                     </div>
                   ))}
                 </div>

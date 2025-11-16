@@ -207,7 +207,7 @@ export function ReviewsSection({
       )}
 
       {/* Liste des reviews */}
-      <div className="space-y-4">
+      <div className="space-y-4 min-w-0">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -220,18 +220,18 @@ export function ReviewsSection({
           reviews.map((review) => (
             <div
               key={review.id}
-              className="rounded-lg border border-border bg-card p-6"
+              className="rounded-lg border border-border bg-card p-6 min-w-0 overflow-hidden"
             >
               {/* Header */}
-              <div className="mb-3 flex items-start justify-between">
-                <div>
-                  <p className="font-semibold">
+              <div className="mb-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold truncate">
                     {review.user.first_name && review.user.last_name
                       ? `${review.user.first_name} ${review.user.last_name}`
                       : review.user.email}
                   </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="flex">{renderStars(review.rating)}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <div className="flex flex-shrink-0">{renderStars(review.rating)}</div>
                     <span className="text-sm text-muted-foreground">
                       {new Date(review.created_at).toLocaleDateString('fr-FR', {
                         year: 'numeric',
@@ -245,7 +245,7 @@ export function ReviewsSection({
 
               {/* Commentaire */}
               {review.comment && (
-                <p className="text-muted-foreground">{review.comment}</p>
+                <p className="text-muted-foreground break-words overflow-wrap-anywhere">{review.comment}</p>
               )}
             </div>
           ))
