@@ -32,20 +32,36 @@ export default function StripeSettingsPage() {
   }, [user?.id]);
 
   const checkStripeStatus = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('❌ [STRIPE SETTINGS CLIENT] Pas de userId disponible');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('='.repeat(80));
+      console.log('🔍 [STRIPE SETTINGS CLIENT] Vérification statut Stripe');
+      console.log('👤 userId envoyé:', user.id);
+      console.log('📧 user email:', user.email);
+      console.log('🌐 URL appelée:', `/api/stripe/connect/status?userId=${user.id}`);
+
       const response = await fetch(`/api/stripe/connect/status?userId=${user.id}`);
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response error:', errorText);
         throw new Error('Erreur vérification statut');
       }
 
       const data = await response.json();
+      console.log('✅ Données reçues:', JSON.stringify(data, null, 2));
+      console.log('='.repeat(80));
       setStripeStatus(data);
     } catch (error) {
-      console.error('❌ [STRIPE SETTINGS] Erreur:', error);
+      console.error('❌ [STRIPE SETTINGS CLIENT] Erreur:', error);
     } finally {
       setLoading(false);
     }

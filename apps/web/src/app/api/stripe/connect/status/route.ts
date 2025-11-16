@@ -29,13 +29,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('📊 [STRIPE CONNECT STATUS] Début vérification statut... (v2-no-cache)');
+    console.log('='.repeat(80));
+    console.log('📊 [STRIPE CONNECT STATUS v3-FULL-DEBUG] Début vérification statut...');
+    console.log('🕐 Timestamp:', new Date().toISOString());
+    console.log('🌐 URL complète:', req.url);
 
     // Créer un client Supabase frais pour chaque requête (évite le cache)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    console.log('✅ Client Supabase créé');
+    console.log('🔑 SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('🔑 Service role key présent:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
 
     // ============================================
     // 1️⃣ VALIDATION DES DONNÉES
@@ -44,7 +51,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
 
-    console.log('📋 [STRIPE CONNECT STATUS] Données reçues:', { userId });
+    console.log('📋 [STRIPE CONNECT STATUS] userId reçu depuis query string:', userId);
+    console.log('📋 Type de userId:', typeof userId);
 
     if (!userId) {
       console.error('❌ [STRIPE CONNECT STATUS] userId manquant');
@@ -55,25 +63,32 @@ export async function GET(req: NextRequest) {
     // 2️⃣ RÉCUPÉRATION DU PROFIL
     // ============================================
 
-    console.log('👤 [STRIPE CONNECT STATUS] Récupération profil:', userId);
+    console.log('👤 [STRIPE CONNECT STATUS] Récupération profil depuis Supabase...');
+    console.log('👤 Query: SELECT * FROM profiles WHERE id =', userId);
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, stripe_account_id, stripe_account_status, stripe_onboarding_completed')
+      .select('id, email, stripe_account_id, stripe_account_status, stripe_onboarding_completed')
       .eq('id', userId)
       .single();
 
+    console.log('👤 [STRIPE CONNECT STATUS] Résultat requête Supabase:');
+    console.log('  - Error:', profileError);
+    console.log('  - Data:', JSON.stringify(profile, null, 2));
+
     if (profileError || !profile) {
       console.error('❌ [STRIPE CONNECT STATUS] Profil non trouvé:', profileError);
+      console.error('❌ Error code:', profileError?.code);
+      console.error('❌ Error message:', profileError?.message);
       return NextResponse.json({ error: 'Profil non trouvé' }, { status: 404 });
     }
 
-    console.log('✅ [STRIPE CONNECT STATUS] Profil trouvé:', {
-      userId: userId,
-      stripeAccountId: profile.stripe_account_id,
-      hasStripeAccount: !!profile.stripe_account_id,
-      currentStatus: profile.stripe_account_status,
-    });
+    console.log('✅ [STRIPE CONNECT STATUS] Profil trouvé:');
+    console.log('  - userId:', profile.id);
+    console.log('  - email:', profile.email);
+    console.log('  - stripe_account_id:', profile.stripe_account_id);
+    console.log('  - stripe_account_status:', profile.stripe_account_status);
+    console.log('  - stripe_onboarding_completed:', profile.stripe_onboarding_completed);
 
     // Si pas de compte Stripe, retourner not_connected
     if (!profile.stripe_account_id) {
@@ -88,26 +103,48 @@ export async function GET(req: NextRequest) {
     // 3️⃣ VÉRIFIER LE STATUT DANS STRIPE
     // ============================================
 
-    console.log('💳 [STRIPE CONNECT STATUS] Vérification compte Stripe:', profile.stripe_account_id);
+    console.log('💳 [STRIPE CONNECT STATUS] Vérification compte Stripe...');
+    console.log('💳 Account ID à vérifier:', profile.stripe_account_id);
 
     const stripe = getStripeServerInstance();
+    console.log('💳 Stripe client initialisé');
+    console.log('💳 Mode Stripe:', process.env.STRIPE_SECRET_KEY?.startsWith('sk_live') ? 'LIVE' : 'TEST');
 
     let account;
     try {
+      console.log('💳 Appel stripe.accounts.retrieve pour:', profile.stripe_account_id);
       account = await stripe.accounts.retrieve(profile.stripe_account_id);
+      console.log('✅ Compte Stripe récupéré avec succès:', {
+        id: account.id,
+        type: account.type,
+        email: account.email,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted,
+      });
     } catch (stripeError: any) {
+      console.log('❌ [STRIPE CONNECT STATUS] Erreur lors de la récupération du compte Stripe');
+      console.log('❌ Error code:', stripeError.code);
+      console.log('❌ Error type:', stripeError.type);
+      console.log('❌ Error message:', stripeError.message);
+      console.log('❌ Full error:', JSON.stringify(stripeError, null, 2));
+
       // Si le compte n'existe pas en LIVE (mais existe en TEST)
       const isTestAccountError =
         stripeError.code === 'resource_missing' ||
         stripeError.message?.includes('similar object exists in test mode') ||
         stripeError.message?.includes('was a test account created with a testmode key');
 
+      console.log('🔍 Is test account error?', isTestAccountError);
+
       if (isTestAccountError) {
         console.log('⚠️ [STRIPE CONNECT STATUS] Compte TEST détecté en mode LIVE - nettoyage');
-        console.log('Message Stripe:', stripeError.message);
+        console.log('⚠️ Account ID à nettoyer:', profile.stripe_account_id);
+        console.log('⚠️ Message Stripe:', stripeError.message);
 
         // Nettoyer l'ancien compte TEST de la BDD
-        await supabase
+        console.log('🧹 [STRIPE CONNECT STATUS] Nettoyage du compte TEST dans Supabase...');
+        const { error: cleanupError } = await supabase
           .from('profiles')
           .update({
             stripe_account_id: null,
@@ -116,12 +153,21 @@ export async function GET(req: NextRequest) {
           })
           .eq('id', userId);
 
+        if (cleanupError) {
+          console.error('❌ Erreur lors du nettoyage:', cleanupError);
+        } else {
+          console.log('✅ Compte TEST nettoyé de la BDD');
+        }
+
+        console.log('📤 Retour: not_connected (compte TEST nettoyé)');
+        console.log('='.repeat(80));
         return NextResponse.json({
           status: 'not_connected',
           hasStripeAccount: false,
           canReceivePayments: false,
         }, { status: 200 });
       }
+      console.log('❌ Erreur Stripe non gérée, relance de l\'erreur');
       throw stripeError; // Relancer l'erreur si c'est autre chose
     }
 
