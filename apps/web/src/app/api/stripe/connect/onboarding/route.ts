@@ -36,7 +36,7 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('🔗 [STRIPE CONNECT ONBOARDING] Début onboarding...');
+    console.log('🔗 [STRIPE CONNECT ONBOARDING] Début onboarding... (VERSION v2-with-validation)');
 
     // ============================================
     // 1️⃣ VALIDATION DES DONNÉES
