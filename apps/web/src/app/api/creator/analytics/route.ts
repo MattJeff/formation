@@ -24,6 +24,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // ============================================
 // 📊 GET /api/creator/analytics
 // ============================================

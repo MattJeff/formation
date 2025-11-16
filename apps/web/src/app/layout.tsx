@@ -5,6 +5,9 @@ import { AuthProvider } from '@/providers/AuthProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import CookieConsent from '@/components/legal/CookieConsent';
 
+// Force dynamic rendering for the entire app (required for authentication)
+export const dynamic = 'force-dynamic';
+
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',

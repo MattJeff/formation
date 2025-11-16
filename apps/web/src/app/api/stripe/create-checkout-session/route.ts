@@ -35,6 +35,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY! // Service role pour accès complet
 );
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // ============================================
 // 📨 POST /api/stripe/create-checkout-session
 // ============================================
