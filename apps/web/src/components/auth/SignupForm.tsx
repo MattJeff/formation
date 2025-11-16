@@ -74,6 +74,7 @@ export function SignupForm() {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/verify-email`,
           data: {
             full_name: `${formData.firstName} ${formData.lastName}`,
             first_name: formData.firstName,
