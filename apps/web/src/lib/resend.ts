@@ -30,7 +30,10 @@ if (!apiKey) {
 export const resend = new Resend(apiKey);
 
 // Adresse email par défaut (sender)
-export const FROM_EMAIL = 'SkillForge <noreply@skillforge.com>';
+// Note: En production, utilisez onboarding@resend.dev ou configurez votre domaine
+export const FROM_EMAIL = process.env.NODE_ENV === 'production'
+  ? 'SkillForge <onboarding@resend.dev>'
+  : 'SkillForge <noreply@skillforge.com>';
 
 // ============================================
 // 📧 TYPES D'EMAILS
