@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Play, Loader2, CheckCircle, Circle, FileText, Video, Send, MessageCircle } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronLeft, ChevronRight, Play, Loader2, CheckCircle, Circle, FileText, Video, Send, MessageCircle, Menu, X, ArrowLeft, Edit } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -16,11 +17,13 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
+  parent_id: string | null;
   profiles: {
     first_name: string;
     last_name: string;
     avatar_url: string | null;
   };
+  replies?: Comment[];
 }
 
 export function LearnClient({ courseId }: LearnClientProps) {
@@ -35,6 +38,9 @@ export function LearnClient({ courseId }: LearnClientProps) {
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [sendingComment, setSendingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -59,21 +65,7 @@ export function LearnClient({ courseId }: LearnClientProps) {
     try {
       console.log('📚 [LEARN] Chargement du cours:', courseId);
 
-      // Vérifier l'inscription
-      const { data: enrollmentData, error: enrollError } = await supabase
-        .from('enrollments')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId)
-        .single();
-
-      if (enrollError || !enrollmentData) {
-        console.error('❌ [LEARN] Non inscrit:', enrollError);
-        router.push(`/courses/${courseId}`);
-        return;
-      }
-
-      // Charger le cours avec sections et leçons
+      // Charger le cours d'abord pour vérifier si l'utilisateur est le créateur
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select(`
@@ -103,6 +95,27 @@ export function LearnClient({ courseId }: LearnClientProps) {
         console.error('❌ [LEARN] Cours non trouvé:', courseError);
         setLoading(false);
         return;
+      }
+
+      // Vérifier si l'utilisateur est le créateur
+      const isCreator = courseData.creator_id === user.id;
+
+      // Si ce n'est PAS le créateur, vérifier l'inscription
+      if (!isCreator) {
+        const { data: enrollmentData, error: enrollError } = await supabase
+          .from('enrollments')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('course_id', courseId)
+          .single();
+
+        if (enrollError || !enrollmentData) {
+          console.error('❌ [LEARN] Non inscrit:', enrollError);
+          router.push(`/courses/${courseId}`);
+          return;
+        }
+      } else {
+        console.log('✅ [LEARN] Accès créateur au cours');
       }
 
       console.log('✅ [LEARN] Cours chargé:', courseData.title);
@@ -147,23 +160,56 @@ export function LearnClient({ courseId }: LearnClientProps) {
   const loadComments = async (lessonId: string) => {
     setLoadingComments(true);
     try {
-      const { data, error } = await supabase
+      // Charger tous les commentaires (parents et réponses)
+      const { data: allCommentsData, error: commentsError } = await supabase
         .from('lesson_comments')
-        .select(`
-          *,
-          profiles!lesson_comments_user_id_fkey (first_name, last_name, avatar_url)
-        `)
+        .select('*')
         .eq('lesson_id', lessonId)
         .eq('course_id', courseId)
-        .is('parent_id', null)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('❌ [LEARN] Erreur chargement commentaires:', error);
+      if (commentsError) {
+        console.error('❌ [LEARN] Erreur chargement commentaires:', commentsError);
         return;
       }
 
-      setComments((data as any) || []);
+      if (!allCommentsData || allCommentsData.length === 0) {
+        setComments([]);
+        return;
+      }
+
+      // Charger les profils de tous les auteurs
+      const userIds = [...new Set(allCommentsData.map((c: any) => c.user_id))];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('❌ [LEARN] Erreur chargement profils:', profilesError);
+      }
+
+      // Séparer les commentaires parents et les réponses
+      const parentComments = allCommentsData.filter((c: any) => !c.parent_id);
+      const replies = allCommentsData.filter((c: any) => c.parent_id);
+
+      // Combiner les commentaires avec leurs profils et leurs réponses
+      const commentsWithProfilesAndReplies = parentComments.map((comment: any) => {
+        const commentReplies = replies
+          .filter((r: any) => r.parent_id === comment.id)
+          .map((reply: any) => ({
+            ...reply,
+            profiles: profilesData?.find((p: any) => p.id === reply.user_id) || null,
+          }));
+
+        return {
+          ...comment,
+          profiles: profilesData?.find((p: any) => p.id === comment.user_id) || null,
+          replies: commentReplies,
+        };
+      });
+
+      setComments(commentsWithProfilesAndReplies as any);
     } catch (error) {
       console.error('❌ [LEARN] Erreur:', error);
     } finally {
@@ -195,6 +241,39 @@ export function LearnClient({ courseId }: LearnClientProps) {
       setNewComment('');
       await loadComments(currentLesson.id);
       console.log('✅ [LEARN] Commentaire envoyé');
+    } catch (error) {
+      console.error('❌ [LEARN] Erreur:', error);
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  const sendReply = async (parentId: string) => {
+    if (!replyText.trim() || !user) return;
+
+    setSendingComment(true);
+    try {
+      const currentLesson = allLessons[currentLessonIndex];
+
+      const { error } = await supabase
+        .from('lesson_comments')
+        .insert({
+          lesson_id: currentLesson.id,
+          course_id: courseId,
+          user_id: user.id,
+          content: replyText.trim(),
+          parent_id: parentId,
+        });
+
+      if (error) {
+        console.error('❌ [LEARN] Erreur envoi réponse:', error);
+        return;
+      }
+
+      setReplyText('');
+      setReplyingTo(null);
+      await loadComments(currentLesson.id);
+      console.log('✅ [LEARN] Réponse envoyée');
     } catch (error) {
       console.error('❌ [LEARN] Erreur:', error);
     } finally {
@@ -280,6 +359,7 @@ export function LearnClient({ courseId }: LearnClientProps) {
   }
 
   const currentLesson = allLessons[currentLessonIndex];
+  const isCreator = course?.creator_id === user?.id;
   const progressPercentage = allLessons.length > 0
     ? Math.round((completedLessons.size / allLessons.length) * 100)
     : 0;
@@ -340,19 +420,73 @@ export function LearnClient({ courseId }: LearnClientProps) {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <header className="flex h-16 items-center justify-between border-b border-border px-6">
-        <Link href={`/courses/${courseId}`} className="font-semibold hover:text-primary">
-          ← Retour au cours
-        </Link>
-        <h1 className="text-lg font-semibold">{course.title}</h1>
-        <div className="text-sm text-muted-foreground">
-          {progressPercentage}% terminé
+      <header className="flex h-16 items-center justify-between border-b border-border px-4 md:px-6">
+        <div className="flex items-center gap-2">
+          {/* Bouton hamburger (mobile only) */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="rounded-lg p-2 hover:bg-accent md:hidden"
+            aria-label="Toggle menu"
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          {/* Bouton retour - Icône en mobile, texte en desktop */}
+          <Link
+            href={`/courses/${courseId}`}
+            className="flex items-center gap-1 rounded-lg p-2 hover:bg-accent md:p-0 md:hover:bg-transparent"
+            title="Retour au cours"
+          >
+            <ArrowLeft className="h-5 w-5 md:h-4 md:w-4" />
+            <span className="hidden font-semibold hover:text-primary md:inline">Retour au cours</span>
+          </Link>
         </div>
+
+        {/* Titre (tronqué en mobile) */}
+        <h1 className="flex-1 truncate px-2 text-center text-sm font-semibold md:text-left md:text-lg">{course.title}</h1>
+
+        {/* Bouton/Progress */}
+        {isCreator ? (
+          <Link
+            href={`/creator/courses/${courseId}/edit`}
+            className="flex items-center gap-2 rounded-lg border border-primary p-2 text-primary hover:bg-primary/10 md:px-4 md:py-2"
+            title="Modifier le cours"
+          >
+            <Edit className="h-5 w-5 md:h-4 md:w-4" />
+            <span className="hidden text-sm font-medium md:inline">Modifier le cours</span>
+          </Link>
+        ) : (
+          <div className="ml-2 text-xs text-muted-foreground md:text-sm">
+            {progressPercentage}%
+          </div>
+        )}
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 overflow-y-auto border-r border-border bg-card p-4">
-          <h2 className="mb-4 font-semibold">Contenu du cours</h2>
+        {/* Overlay pour fermer la sidebar en mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-20 bg-black/50 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-30 w-80 overflow-y-auto border-r border-border bg-card p-4 transition-transform
+          md:static md:translate-x-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold">Contenu du cours</h2>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-lg p-1 hover:bg-accent md:hidden"
+              aria-label="Fermer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
           <div className="space-y-4">
             {course.sections?.map((section: any, sectionIndex: number) => (
               <div key={section.id}>
@@ -398,29 +532,36 @@ export function LearnClient({ courseId }: LearnClientProps) {
                 {renderLessonContent()}
               </div>
 
-              <div className="p-6">
-                <div className="mb-4 flex items-center justify-between">
+              <div className="p-4 md:p-6">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold">{currentLesson.title}</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h2 className="text-lg font-bold md:text-2xl">{currentLesson.title}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground md:text-sm">
                       {currentLesson.type === 'video' && '📹 Vidéo'}
                       {currentLesson.type === 'pdf' && '📄 PDF'}
                       {currentLesson.type === 'article' && '📝 Article'}
                       {' • '}{currentLesson.duration}
                     </p>
                   </div>
-                  {completedLessons.has(currentLesson.id) ? (
-                    <div className="flex items-center gap-2 text-green-500">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="text-sm font-medium">Complété</span>
+                  {!isCreator && (
+                    completedLessons.has(currentLesson.id) ? (
+                      <div className="flex items-center gap-2 text-green-500">
+                        <CheckCircle className="h-5 w-5" />
+                        <span className="text-sm font-medium">Complété</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => markLessonComplete(currentLesson.id)}
+                        className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+                      >
+                        Marquer comme complété
+                      </button>
+                    )
+                  )}
+                  {isCreator && (
+                    <div className="rounded-lg bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+                      👨‍🏫 Mode Créateur
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => markLessonComplete(currentLesson.id)}
-                      className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10"
-                    >
-                      Marquer comme complété
-                    </button>
                   )}
                 </div>
 
@@ -501,9 +642,21 @@ export function LearnClient({ courseId }: LearnClientProps) {
                       {comments.map((comment) => (
                         <div key={comment.id} className="rounded-lg border border-border bg-card p-4">
                           <div className="mb-2 flex items-start gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary font-semibold">
-                              {comment.profiles?.first_name?.[0] || 'U'}
-                            </div>
+                            {comment.profiles?.avatar_url ? (
+                              <div className="relative h-10 w-10 flex-shrink-0">
+                                <Image
+                                  src={comment.profiles.avatar_url}
+                                  alt={`${comment.profiles.first_name} ${comment.profiles.last_name}`}
+                                  fill
+                                  sizes="40px"
+                                  className="rounded-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-semibold">
+                                {comment.profiles?.first_name?.[0] || 'U'}
+                              </div>
+                            )}
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold">
@@ -518,6 +671,90 @@ export function LearnClient({ courseId }: LearnClientProps) {
                                 </span>
                               </div>
                               <p className="mt-1 text-sm text-muted-foreground">{comment.content}</p>
+
+                              {/* Bouton Répondre */}
+                              <button
+                                onClick={() => setReplyingTo(comment.id)}
+                                className="mt-2 text-xs text-primary hover:underline"
+                              >
+                                Répondre
+                              </button>
+
+                              {/* Formulaire de réponse */}
+                              {replyingTo === comment.id && (
+                                <div className="mt-3 rounded-lg border border-border bg-background p-3">
+                                  <textarea
+                                    value={replyText}
+                                    onChange={(e) => setReplyText(e.target.value)}
+                                    placeholder="Écrivez votre réponse..."
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                                    rows={2}
+                                  />
+                                  <div className="mt-2 flex gap-2 justify-end">
+                                    <button
+                                      onClick={() => {
+                                        setReplyingTo(null);
+                                        setReplyText('');
+                                      }}
+                                      className="rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-accent"
+                                    >
+                                      Annuler
+                                    </button>
+                                    <button
+                                      onClick={() => sendReply(comment.id)}
+                                      disabled={!replyText.trim() || sendingComment}
+                                      className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {sendingComment ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Send className="h-3 w-3" />
+                                      )}
+                                      Répondre
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Afficher les réponses */}
+                              {comment.replies && comment.replies.length > 0 && (
+                                <div className="mt-3 space-y-3 border-l-2 border-primary/20 pl-4">
+                                  {comment.replies.map((reply) => (
+                                    <div key={reply.id} className="flex items-start gap-2">
+                                      {reply.profiles?.avatar_url ? (
+                                        <div className="relative h-8 w-8 flex-shrink-0">
+                                          <Image
+                                            src={reply.profiles.avatar_url}
+                                            alt={`${reply.profiles.first_name} ${reply.profiles.last_name}`}
+                                            fill
+                                            sizes="32px"
+                                            className="rounded-full object-cover"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-semibold">
+                                          {reply.profiles?.first_name?.[0] || 'U'}
+                                        </div>
+                                      )}
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm font-semibold">
+                                            {reply.profiles?.first_name} {reply.profiles?.last_name}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {new Date(reply.created_at).toLocaleDateString('fr-FR', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              year: 'numeric'
+                                            })}
+                                          </span>
+                                        </div>
+                                        <p className="mt-1 text-sm text-muted-foreground">{reply.content}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -527,22 +764,24 @@ export function LearnClient({ courseId }: LearnClientProps) {
                 </div>
 
                 {/* Navigation */}
-                <div className="mt-8 flex justify-between border-t border-border pt-6">
+                <div className="mt-8 flex justify-between gap-2 border-t border-border pt-6">
                   <button
                     onClick={goToPreviousLesson}
                     disabled={currentLessonIndex === 0}
-                    className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 md:gap-2 md:px-4"
                   >
-                    <ChevronLeft className="h-5 w-5" />
-                    Leçon précédente
+                    <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
+                    <span className="hidden sm:inline">Leçon précédente</span>
+                    <span className="sm:hidden">Préc.</span>
                   </button>
                   <button
                     onClick={goToNextLesson}
                     disabled={currentLessonIndex === allLessons.length - 1}
-                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 md:gap-2 md:px-4"
                   >
-                    Leçon suivante
-                    <ChevronRight className="h-5 w-5" />
+                    <span className="hidden sm:inline">Leçon suivante</span>
+                    <span className="sm:hidden">Suiv.</span>
+                    <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
                   </button>
                 </div>
               </div>

@@ -8,6 +8,16 @@ import { Plus, BookOpen, Users, Clock, TrendingUp, Edit, Eye } from 'lucide-reac
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
 
+interface Lesson {
+  id: string;
+  duration: number;
+}
+
+interface Section {
+  id: string;
+  lessons: Lesson[];
+}
+
 interface Course {
   id: string;
   title: string;
@@ -23,7 +33,21 @@ interface Course {
   total_lessons: number;
   total_duration: number;
   created_at: string;
+  sections?: Section[];
 }
+
+// Helper function to calculate course stats from sections/lessons
+const calculateCourseStats = (course: Course) => {
+  if (!course.sections || course.sections.length === 0) {
+    return { lessonCount: 0, totalDuration: 0 };
+  }
+
+  const allLessons = course.sections.flatMap(section => section.lessons || []);
+  const lessonCount = allLessons.length;
+  const totalDuration = allLessons.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+
+  return { lessonCount, totalDuration };
+};
 
 export default function CoursesClient() {
   const router = useRouter();
@@ -59,7 +83,16 @@ export default function CoursesClient() {
       // Utiliser directement Supabase au lieu de l'API route
       const { data: courses, error } = await supabase
         .from('courses')
-        .select('*')
+        .select(`
+          *,
+          sections (
+            id,
+            lessons (
+              id,
+              duration
+            )
+          )
+        `)
         .eq('creator_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -269,11 +302,11 @@ export default function CoursesClient() {
                     </div>
                     <div className="flex items-center gap-1">
                       <BookOpen className="h-4 w-4" />
-                      <span>{course.total_lessons} leçons</span>
+                      <span>{calculateCourseStats(course).lessonCount} leçons</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      <span>{Math.floor(course.total_duration / 60)}h</span>
+                      <span>{Math.floor(calculateCourseStats(course).totalDuration / 60)}h</span>
                     </div>
                   </div>
 

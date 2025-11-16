@@ -112,7 +112,7 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
 
       const supabase = (await import('@/lib/supabase')).supabase;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from(bucket)
         .upload(fileName, uploadedFile, {
           cacheControl: '3600',
@@ -134,9 +134,14 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
       console.log(`✅ Fichier uploadé: ${publicUrl}`);
 
       // Mettre à jour avec l'URL et le statut success
+      console.log('🔄 [UPLOAD] Mise à jour de l\'état avec fileUrl:', publicUrl);
       onUpdate(sectionId, lesson.id, 'fileUrl', publicUrl);
       onUpdate(sectionId, lesson.id, 'uploadStatus', 'success');
       onUpdate(sectionId, lesson.id, 'uploadError', '');
+      // Nettoyer le fichier File pour afficher l'interface "fileUrl"
+      console.log('🧹 [UPLOAD] Nettoyage du fichier File');
+      onUpdate(sectionId, lesson.id, 'file', null);
+      console.log('✅ [UPLOAD] État mis à jour, le composant devrait re-render');
     } catch (error) {
       console.error('❌ Erreur upload:', error);
       onUpdate(sectionId, lesson.id, 'uploadStatus', 'error');
@@ -167,61 +172,68 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
     const hasFile = lesson.file || lesson.fileUrl;
 
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border p-3 hover:bg-accent">
-        <span className="text-xs text-muted-foreground">{lessonIndex + 1}</span>
-        <div className="flex h-8 w-8 items-center justify-center rounded bg-primary/10">
-          {lesson.type === 'video' && <Video className="h-4 w-4 text-primary" />}
-          {lesson.type === 'text' && <FileText className="h-4 w-4 text-primary" />}
-          {lesson.type === 'pdf' && <FileText className="h-4 w-4 text-red-500" />}
-          {lesson.type === 'link' && <LinkIcon className="h-4 w-4 text-primary" />}
-          {lesson.type === 'file' && <File className="h-4 w-4 text-primary" />}
-        </div>
-        <input
-          type="text"
-          value={lesson.title}
-          onChange={(e) => onUpdate(sectionId, lesson.id, 'title', e.target.value)}
-          className="flex-1 bg-transparent px-2 py-1 text-sm outline-none"
-          placeholder="Titre de la leçon"
-        />
-        {hasFile && (
-          <UploadStatusIndicator
-            status={lesson.uploadStatus || 'success'}
-            error={lesson.uploadError}
-            onRetry={retryUpload}
+      <div className="flex flex-col gap-2 rounded-lg border border-border p-3 hover:bg-accent">
+        {/* Ligne 1: Numéro, icône, titre, delete */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{lessonIndex + 1}</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded bg-primary/10 flex-shrink-0">
+            {lesson.type === 'video' && <Video className="h-4 w-4 text-primary" />}
+            {lesson.type === 'text' && <FileText className="h-4 w-4 text-primary" />}
+            {lesson.type === 'pdf' && <FileText className="h-4 w-4 text-red-500" />}
+            {lesson.type === 'link' && <LinkIcon className="h-4 w-4 text-primary" />}
+            {lesson.type === 'file' && <File className="h-4 w-4 text-primary" />}
+          </div>
+          <input
+            type="text"
+            value={lesson.title}
+            onChange={(e) => onUpdate(sectionId, lesson.id, 'title', e.target.value)}
+            className="flex-1 bg-transparent px-2 py-1 text-sm outline-none min-w-0"
+            placeholder="Titre de la leçon"
           />
-        )}
-        <select
-          value={lesson.type}
-          onChange={(e) => onUpdate(sectionId, lesson.id, 'type', e.target.value)}
-          className="rounded-md border border-input bg-background px-3 py-1 text-sm"
-        >
-          <option value="video">Vidéo</option>
-          <option value="text">Texte</option>
-          <option value="pdf">PDF</option>
-          <option value="link">Lien</option>
-          <option value="file">Fichier</option>
-        </select>
-        <input
-          type="text"
-          value={lesson.duration}
-          onChange={(e) => onUpdate(sectionId, lesson.id, 'duration', e.target.value)}
-          className="w-20 rounded-md border border-input bg-background px-3 py-1 text-sm"
-          placeholder="5:00"
-        />
-        <button
-          type="button"
-          onClick={() => setIsExpanded(true)}
-          className="rounded-md px-3 py-1 text-sm text-primary hover:underline"
-        >
-          Éditer
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(sectionId, lesson.id)}
-          className="rounded-md p-1 hover:bg-destructive hover:text-destructive-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
+          <button
+            type="button"
+            onClick={() => onDelete(sectionId, lesson.id)}
+            className="rounded-md p-1 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Ligne 2: Contrôles (status, type, durée, éditer) */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {hasFile && (
+            <UploadStatusIndicator
+              status={lesson.uploadStatus || 'success'}
+              error={lesson.uploadError}
+              onRetry={retryUpload}
+            />
+          )}
+          <select
+            value={lesson.type}
+            onChange={(e) => onUpdate(sectionId, lesson.id, 'type', e.target.value)}
+            className="rounded-md border border-input bg-background px-2 py-1 text-xs md:text-sm"
+          >
+            <option value="video">Vidéo</option>
+            <option value="text">Texte</option>
+            <option value="pdf">PDF</option>
+            <option value="link">Lien</option>
+            <option value="file">Fichier</option>
+          </select>
+          <input
+            type="text"
+            value={lesson.duration}
+            onChange={(e) => onUpdate(sectionId, lesson.id, 'duration', e.target.value)}
+            className="w-16 md:w-20 rounded-md border border-input bg-background px-2 py-1 text-xs md:text-sm"
+            placeholder="5:00"
+          />
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="rounded-md px-2 py-1 text-xs md:text-sm text-primary hover:underline"
+          >
+            Éditer
+          </button>
+        </div>
       </div>
     );
   }
@@ -293,6 +305,18 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
         {lesson.type === 'video' && (
           <div>
             <label className="mb-2 block text-sm font-medium">Vidéo</label>
+            {(() => {
+              const renderBranch = lesson.file ? 'FILE_OBJECT' : lesson.fileUrl ? 'FILE_URL' : 'UPLOAD_FORM';
+              console.log('🎬 [RENDER VIDEO] État lesson:', {
+                hasFile: !!lesson.file,
+                fileName: lesson.file?.name,
+                hasFileUrl: !!lesson.fileUrl,
+                fileUrl: lesson.fileUrl,
+                uploadStatus: lesson.uploadStatus,
+                RENDERING: renderBranch
+              });
+              return null;
+            })()}
             {lesson.file ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-3 rounded-lg border border-border p-4">
@@ -320,11 +344,11 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
               </div>
             ) : lesson.fileUrl ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                <div className="flex items-center gap-3 rounded-lg border-2 border-green-500 bg-green-50 p-4">
                   <Video className="h-8 w-8 text-blue-500" />
                   <div className="flex-1">
-                    <p className="font-medium">Vidéo existante</p>
-                    <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                    <p className="font-medium text-green-700">✅ Vidéo uploadée avec succès</p>
+                    <p className="text-xs text-muted-foreground break-all">{lesson.fileUrl}</p>
                   </div>
                   <UploadStatusIndicator
                     status={lesson.uploadStatus || 'success'}
@@ -379,6 +403,18 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
         {lesson.type === 'pdf' && (
           <div>
             <label className="mb-2 block text-sm font-medium">Document PDF</label>
+            {(() => {
+              const renderBranch = lesson.file ? 'FILE_OBJECT' : lesson.fileUrl ? 'FILE_URL' : 'UPLOAD_FORM';
+              console.log('📄 [RENDER PDF] État lesson:', {
+                hasFile: !!lesson.file,
+                fileName: lesson.file?.name,
+                hasFileUrl: !!lesson.fileUrl,
+                fileUrl: lesson.fileUrl,
+                uploadStatus: lesson.uploadStatus,
+                RENDERING: renderBranch
+              });
+              return null;
+            })()}
             {lesson.file ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-3 rounded-lg border border-border p-4">
@@ -402,11 +438,11 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
               </div>
             ) : lesson.fileUrl ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                <div className="flex items-center gap-3 rounded-lg border-2 border-green-500 bg-green-50 p-4">
                   <FileText className="h-8 w-8 text-red-500" />
                   <div className="flex-1">
-                    <p className="font-medium">PDF existant</p>
-                    <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                    <p className="font-medium text-green-700">✅ PDF uploadé avec succès</p>
+                    <p className="text-xs text-muted-foreground break-all">{lesson.fileUrl}</p>
                   </div>
                   <UploadStatusIndicator
                     status={lesson.uploadStatus || 'success'}
@@ -447,6 +483,18 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
         {lesson.type === 'file' && (
           <div>
             <label className="mb-2 block text-sm font-medium">Fichier</label>
+            {(() => {
+              const renderBranch = lesson.file ? 'FILE_OBJECT' : lesson.fileUrl ? 'FILE_URL' : 'UPLOAD_FORM';
+              console.log('📦 [RENDER FILE] État lesson:', {
+                hasFile: !!lesson.file,
+                fileName: lesson.file?.name,
+                hasFileUrl: !!lesson.fileUrl,
+                fileUrl: lesson.fileUrl,
+                uploadStatus: lesson.uploadStatus,
+                RENDERING: renderBranch
+              });
+              return null;
+            })()}
             {lesson.file ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-3 rounded-lg border border-border p-4">
@@ -470,11 +518,11 @@ function LessonEditorSimple({ lesson, lessonIndex, sectionId, onUpdate, onDelete
               </div>
             ) : lesson.fileUrl ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary p-4">
+                <div className="flex items-center gap-3 rounded-lg border-2 border-green-500 bg-green-50 p-4">
                   <File className="h-8 w-8 text-blue-500" />
                   <div className="flex-1">
-                    <p className="font-medium">Fichier existant</p>
-                    <p className="text-xs text-muted-foreground">{lesson.fileUrl}</p>
+                    <p className="font-medium text-green-700">✅ Fichier uploadé avec succès</p>
+                    <p className="text-xs text-muted-foreground break-all">{lesson.fileUrl}</p>
                   </div>
                   <UploadStatusIndicator
                     status={lesson.uploadStatus || 'success'}
@@ -673,7 +721,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
       const fileExt = file.name.split('.').pop();
       const fileName = `${timestamp}-${randomStr}.${fileExt}`;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('image')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -771,17 +819,27 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
   };
 
   const updateLesson = (sectionId: string, lessonId: string, field: string, value: any) => {
-    setSections(sections.map(s => {
-      if (s.id === sectionId) {
-        return {
-          ...s,
-          lessons: s.lessons.map(l =>
-            l.id === lessonId ? { ...l, [field]: value } : l
-          ),
-        };
-      }
-      return s;
-    }));
+    console.log('📝 [UPDATE LESSON]', { sectionId, lessonId, field, value: typeof value === 'object' ? '[Object/File]' : value });
+    setSections(prevSections => {
+      const newSections = prevSections.map(s => {
+        if (s.id === sectionId) {
+          return {
+            ...s,
+            lessons: s.lessons.map(l => {
+              if (l.id === lessonId) {
+                const updated = { ...l, [field]: value };
+                console.log('✏️ [UPDATE LESSON] Lesson updated:', { id: l.id, field, oldValue: l[field as keyof typeof l], newValue: value });
+                return updated;
+              }
+              return l;
+            }),
+          };
+        }
+        return s;
+      });
+      console.log('🔄 [UPDATE LESSON] setSections called, should trigger re-render');
+      return newSections;
+    });
   };
 
   const deleteLesson = (sectionId: string, lessonId: string) => {
@@ -804,113 +862,12 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
     if (!formData.description.trim()) errors.push('La description est requise');
     if (formData.description.length < 50) errors.push('La description doit faire au moins 50 caractères');
 
-    // En mode édition, accepter l'image existante (imagePreview) ou une nouvelle (coverImage)
-    const hasValidImage = mode === 'edit' ? (coverImage || imagePreview) : coverImage;
-    if (!hasValidImage) errors.push('L\'image de couverture est requise');
+    // Vérifier que l'image est uploadée (imagePreview contient l'URL)
+    if (!imagePreview) errors.push('L\'image de couverture est requise');
 
     if (!formData.category) errors.push('La catégorie est requise');
 
     return errors;
-  };
-
-  const uploadFileToStorage = async (file: File, bucket: 'image' | 'video' | 'pdf'): Promise<string | null> => {
-    try {
-      // Générer un nom de fichier unique
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(7);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${timestamp}-${randomStr}.${fileExt}`;
-
-      console.log(`📤 Upload de ${file.name} vers bucket ${bucket}...`);
-
-      // Upload vers Supabase Storage
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        console.error(`❌ Erreur upload ${bucket}:`, error);
-        return null;
-      }
-
-      // Récupérer l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
-
-      console.log(`✅ Fichier uploadé: ${publicUrl}`);
-      return publicUrl;
-    } catch (error) {
-      console.error('❌ Erreur upload:', error);
-      return null;
-    }
-  };
-
-  const prepareSectionsForSave = async () => {
-    // Préparer les sections en uploadant les fichiers et en nettoyant les objets File
-    const preparedSections = [];
-
-    for (const section of sections) {
-      const preparedLessons = [];
-
-      for (const lesson of section.lessons) {
-        let fileUrl = lesson.fileUrl || '';
-        let videoUrl = lesson.content || '';
-
-        // Si un nouveau fichier a été uploadé
-        if (lesson.file) {
-          let uploadedUrl: string | null = null;
-
-          // Déterminer le bucket selon le type de leçon
-          if (lesson.type === 'video') {
-            uploadedUrl = await uploadFileToStorage(lesson.file, 'video');
-            if (uploadedUrl) {
-              videoUrl = uploadedUrl;
-              fileUrl = uploadedUrl;
-            } else {
-              throw new Error(`Échec de l'upload de la vidéo: ${lesson.title}`);
-            }
-          } else if (lesson.type === 'pdf') {
-            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdf');
-            if (uploadedUrl) {
-              fileUrl = uploadedUrl;
-            } else {
-              throw new Error(`Échec de l'upload du PDF: ${lesson.title}`);
-            }
-          } else if (lesson.type === 'file') {
-            // Pour les fichiers génériques, on utilise le bucket pdf
-            uploadedUrl = await uploadFileToStorage(lesson.file, 'pdf');
-            if (uploadedUrl) {
-              fileUrl = uploadedUrl;
-            } else {
-              throw new Error(`Échec de l'upload du fichier: ${lesson.title}`);
-            }
-          }
-        }
-
-        preparedLessons.push({
-          id: lesson.id,
-          title: lesson.title,
-          type: lesson.type,
-          duration: lesson.duration,
-          description: lesson.description,
-          content: lesson.type === 'video' ? videoUrl : lesson.content,
-          file_url: fileUrl,
-          video_url: lesson.type === 'video' ? videoUrl : '',
-        });
-      }
-
-      preparedSections.push({
-        id: section.id,
-        title: section.title,
-        lessons: preparedLessons,
-      });
-    }
-
-    return preparedSections;
   };
 
   const handleSaveDraft = async () => {
@@ -1500,27 +1457,29 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
         {renderStepContent()}
 
         {/* Boutons de navigation */}
-        <div className="mt-8 flex items-center justify-between">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={handleSaveDraft}
             disabled={saving}
-            className="flex items-center gap-2 rounded-lg border border-border px-6 py-2 hover:bg-accent disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 sm:px-6"
           >
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Sauvegarde...
+                <span className="hidden sm:inline">Sauvegarde...</span>
+                <span className="sm:hidden">Enregistrement...</span>
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Sauvegarder brouillon
+                <span className="hidden sm:inline">Sauvegarder brouillon</span>
+                <span className="sm:hidden">Brouillon</span>
               </>
             )}
           </button>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             {currentStep !== 'basic' && (
               <button
                 type="button"
@@ -1528,12 +1487,12 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
                   if (currentStep === 'curriculum') setCurrentStep('basic');
                   if (currentStep === 'pricing') setCurrentStep('curriculum');
                 }}
-                className="rounded-lg border border-border px-6 py-2 hover:bg-accent"
+                className="flex-1 rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent sm:flex-none sm:px-6"
               >
                 Précédent
               </button>
             )}
-            
+
             {currentStep !== 'pricing' ? (
               <button
                 type="button"
@@ -1542,7 +1501,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
                   if (currentStep === 'curriculum') setCurrentStep('pricing');
                 }}
                 disabled={!canGoToNextStep()}
-                className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50 sm:flex-none sm:px-6"
               >
                 Suivant
                 <ArrowRight className="h-4 w-4" />
@@ -1552,7 +1511,7 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
                 type="button"
                 onClick={handlePublish}
                 disabled={saving || !formData.price}
-                className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50 sm:flex-none sm:px-6"
               >
                 {saving ? (
                   <>
@@ -1560,7 +1519,10 @@ export function NewCourseClient({ courseId, mode = 'create' }: NewCourseClientPr
                     Publication...
                   </>
                 ) : (
-                  'Publier le cours'
+                  <>
+                    <span className="hidden sm:inline">Publier le cours</span>
+                    <span className="sm:hidden">Publier</span>
+                  </>
                 )}
               </button>
             )}

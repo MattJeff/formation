@@ -118,27 +118,26 @@ export class StripeAPIError extends Error {
 let stripeInstance: Stripe | null = null;
 
 export function getStripeServerInstance(): Stripe {
-  if (!stripeInstance) {
-    const secretKey = process.env.STRIPE_SECRET_KEY;
+  // FORCE RESET: Toujours recréer l'instance pour éviter les problèmes de cache
+  const secretKey = process.env.STRIPE_SECRET_KEY;
 
-    if (!secretKey) {
-      throw new Error(
-        '❌ [STRIPE] STRIPE_SECRET_KEY manquante dans .env.local'
-      );
-    }
-
-    // 🔍 DEBUG: Afficher les premiers caractères de la clé
-    const keyPrefix = secretKey.substring(0, 20);
-    const keyType = secretKey.startsWith('sk_test_') ? 'TEST' : secretKey.startsWith('sk_live_') ? 'LIVE' : 'UNKNOWN';
-    console.log(`🔑 [STRIPE] Clé utilisée: ${keyPrefix}... (Type: ${keyType})`);
-
-    stripeInstance = new Stripe(secretKey, {
-      apiVersion: '2025-10-29.clover',
-      typescript: true,
-    });
-
-    console.log('✅ [STRIPE] Instance serveur initialisée');
+  if (!secretKey) {
+    throw new Error(
+      '❌ [STRIPE] STRIPE_SECRET_KEY manquante dans .env.local'
+    );
   }
+
+  // 🔍 DEBUG: Afficher les premiers caractères de la clé
+  const keyPrefix = secretKey.substring(0, 20);
+  const keyType = secretKey.startsWith('sk_test_') ? 'TEST' : secretKey.startsWith('sk_live_') ? 'LIVE' : 'UNKNOWN';
+  console.log(`🔑 [STRIPE] Clé utilisée: ${keyPrefix}... (Type: ${keyType})`);
+
+  stripeInstance = new Stripe(secretKey, {
+    apiVersion: '2025-10-29.clover',
+    typescript: true,
+  });
+
+  console.log('✅ [STRIPE] Instance serveur initialisée');
 
   return stripeInstance;
 }

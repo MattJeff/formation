@@ -16,7 +16,6 @@ export function EnrollClient({ courseId }: EnrollClientProps) {
   const { user, loading: authLoading } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -60,7 +59,7 @@ export function EnrollClient({ courseId }: EnrollClientProps) {
       setCourse(courseData);
 
       // Auto-inscription
-      handleEnroll(courseData);
+      handleEnroll();
     } catch (error) {
       console.error('❌ [ENROLL] Erreur chargement cours:', error);
       setError('Erreur lors du chargement du cours');
@@ -68,10 +67,9 @@ export function EnrollClient({ courseId }: EnrollClientProps) {
     }
   };
 
-  const handleEnroll = async (courseData: any) => {
+  const handleEnroll = async () => {
     if (!user) return;
 
-    setEnrolling(true);
     setError(null);
 
     try {
@@ -107,7 +105,6 @@ export function EnrollClient({ courseId }: EnrollClientProps) {
       if (enrollError) {
         console.error('❌ [ENROLL] Erreur inscription:', enrollError);
         setError('Erreur lors de l\'inscription. Veuillez réessayer.');
-        setEnrolling(false);
         return;
       }
 
@@ -121,8 +118,6 @@ export function EnrollClient({ courseId }: EnrollClientProps) {
     } catch (error) {
       console.error('❌ [ENROLL] Erreur:', error);
       setError('Une erreur est survenue. Veuillez réessayer.');
-      setEnrolling(false);
-    } finally {
       setLoading(false);
     }
   };

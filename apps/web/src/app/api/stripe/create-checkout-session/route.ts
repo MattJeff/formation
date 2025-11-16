@@ -24,6 +24,7 @@ import {
   CheckoutSessionResponse,
   StripeCheckoutMetadata,
 } from '@/types/stripe';
+import { rateLimitStrict, getClientIP } from '@/lib/rate-limit';
 
 // ============================================
 // 🔧 CONFIGURATION
@@ -41,6 +42,31 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   try {
     console.log('🛒 [STRIPE CHECKOUT] Début création session...');
+
+    // ============================================
+    // 🛡️ RATE LIMITING (10 req/min strict pour paiements)
+    // ============================================
+    const ip = getClientIP(req);
+    const rateLimitResult = await rateLimitStrict(`checkout:${ip}`);
+
+    if (!rateLimitResult.success) {
+      console.warn(`⚠️ [STRIPE CHECKOUT] Rate limit atteint pour IP: ${ip}`);
+      return NextResponse.json(
+        {
+          error: 'Trop de tentatives de paiement. Veuillez patienter.',
+          retryAfter: Math.ceil((rateLimitResult.reset - Date.now()) / 1000),
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString(),
+          }
+        }
+      );
+    }
 
     // ============================================
     // 1️⃣ VALIDATION DES DONNÉES
@@ -70,7 +96,17 @@ export async function POST(req: NextRequest) {
 
     const { data: course, error: courseError } = await supabase
       .from('courses')
-      .select('id, title, price, cover_image, creator_id')
+      .select(`
+        id,
+        title,
+        price,
+        cover_image,
+        creator_id,
+        profiles:creator_id (
+          stripe_account_id,
+          stripe_account_status
+        )
+      `)
       .eq('id', courseId)
       .single();
 
@@ -82,9 +118,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Transformer le profiles en objet unique si c'est un tableau
+    const creatorProfile = Array.isArray(course.profiles) ? course.profiles[0] : course.profiles;
+
     console.log('✅ [STRIPE CHECKOUT] Cours trouvé:', {
       title: course.title,
       price: course.price,
+      creatorHasStripe: !!creatorProfile?.stripe_account_id,
+      creatorStripeStatus: creatorProfile?.stripe_account_status,
     });
 
     // Vérifier que le cours est payant
@@ -168,8 +209,8 @@ export async function POST(req: NextRequest) {
 
     console.log('🔗 [STRIPE CHECKOUT] URLs:', { successUrl, cancelUrl });
 
-    // Créer la session
-    const session = await stripe.checkout.sessions.create({
+    // Configuration de base de la session
+    const sessionConfig: any = {
       mode: 'payment',
       payment_method_types: ['card'],
       line_items: [
@@ -193,7 +234,45 @@ export async function POST(req: NextRequest) {
       cancel_url: cancelUrl,
       allow_promotion_codes: true, // Autoriser les codes promo
       billing_address_collection: 'auto',
-    });
+    };
+
+    // ============================================
+    // 💰 STRIPE CONNECT: Commission 4%
+    // ============================================
+
+    // Si le créateur a un compte Stripe Connect configuré et actif
+    if (creatorProfile?.stripe_account_id && creatorProfile?.stripe_account_status === 'connected') {
+      console.log('💰 [STRIPE CHECKOUT] Application commission 4% via Stripe Connect');
+
+      // Calculer la commission (4% du prix)
+      const platformFeeAmount = Math.round(course.price * 0.04 * 100); // 4% en centimes
+      const creatorAmount = Math.round(course.price * 100) - platformFeeAmount; // 96% pour le créateur
+
+      console.log('💵 [STRIPE CHECKOUT] Répartition:', {
+        totalAmount: Math.round(course.price * 100),
+        platformFee: platformFeeAmount,
+        creatorReceives: creatorAmount,
+        creatorAccountId: creatorProfile.stripe_account_id,
+      });
+
+      // Ajouter les paramètres Stripe Connect (Destination Charges)
+      sessionConfig.payment_intent_data = {
+        application_fee_amount: platformFeeAmount, // 4% pour la plateforme
+        transfer_data: {
+          destination: creatorProfile.stripe_account_id, // Compte du créateur
+        },
+      };
+    } else {
+      console.log('⚠️  [STRIPE CHECKOUT] Créateur sans Stripe Connect, paiement sur compte plateforme uniquement');
+      if (!creatorProfile?.stripe_account_id) {
+        console.log('   → Créateur doit configurer Stripe Connect dans ses paramètres');
+      } else {
+        console.log('   → Statut Stripe Connect:', creatorProfile?.stripe_account_status);
+      }
+    }
+
+    // Créer la session
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log('✅ [STRIPE CHECKOUT] Session créée:', {
       sessionId: session.id,

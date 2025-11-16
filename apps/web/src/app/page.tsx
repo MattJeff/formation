@@ -1,7 +1,13 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Code2, Zap, Users, Award } from 'lucide-react';
+import { ArrowRight, Code2, Zap, Users, Award, Menu, X } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
       {/* Header */}
@@ -11,16 +17,13 @@ export default function HomePage() {
             <Code2 className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold">SkillForge</span>
           </div>
-          <nav className="flex items-center space-x-6">
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
             <Link href="/courses" className="text-sm hover:text-primary transition-colors">
               Cours
             </Link>
-            <Link href="/sandbox" className="text-sm hover:text-primary transition-colors">
-              Sandbox
-            </Link>
-            <Link href="/community" className="text-sm hover:text-primary transition-colors">
-              Communauté
-            </Link>
+            <ThemeToggle />
             <Link
               href="/login"
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -28,7 +31,41 @@ export default function HomePage() {
               Se connecter
             </Link>
           </nav>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-accent"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-sm">
+            <nav className="container mx-auto px-4 py-4 space-y-2">
+              <Link
+                href="/courses"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Cours
+              </Link>
+              <Link
+                href="/login"
+                className="block px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-center font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Se connecter
+              </Link>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -41,23 +78,22 @@ export default function HomePage() {
           </span>
         </h1>
         <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
-          La première plateforme qui transforme l'apprentissage théorique en expérience
-          professionnelle vérifiable. Travaillez avec un client IA, construisez un portfolio
-          réel.
+          La plateforme d'apprentissage qui vous permet de construire des compétences réelles
+          à travers des projets concrets et un suivi personnalisé.
         </p>
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link
-            href="/sandbox/demo"
+            href="/courses"
             className="group inline-flex items-center rounded-lg bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary/90 transition-all"
           >
-            Essayer le Sandbox
+            Explorer les cours
             <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
-            href="/courses"
+            href="/signup"
             className="inline-flex items-center rounded-lg border border-border bg-background px-8 py-4 text-lg font-semibold hover:bg-accent transition-colors"
           >
-            Explorer les cours
+            Commencer gratuitement
           </Link>
         </div>
       </section>
@@ -69,24 +105,24 @@ export default function HomePage() {
         </h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           <FeatureCard
-            icon={<Zap className="h-10 w-10 text-primary" />}
-            title="Sandbox Interactif"
-            description="Un IDE cloud complet avec client IA qui simule de vraies relations professionnelles."
-          />
-          <FeatureCard
             icon={<Code2 className="h-10 w-10 text-primary" />}
-            title="Portfolio-First"
-            description="Construisez des projets concrets, pas seulement des certificats vides de sens."
+            title="Formations Pratiques"
+            description="Des cours structurés avec vidéos, exercices et projets concrets pour apprendre en faisant."
           />
           <FeatureCard
-            icon={<Users className="h-10 w-10 text-primary" />}
-            title="Communauté Active"
-            description="Apprenez avec d'autres, collaborez sur des projets, recevez du mentorat."
+            icon={<Zap className="h-10 w-10 text-primary" />}
+            title="Progression Suivie"
+            description="Suivez votre avancement en temps réel avec des statistiques détaillées et des objectifs clairs."
           />
           <FeatureCard
             icon={<Award className="h-10 w-10 text-primary" />}
-            title="Compétences Vérifiables"
-            description="Des preuves de compétence basées sur des projets réels, pas sur des QCM."
+            title="Certificats Vérifiables"
+            description="Obtenez des certificats officiels téléchargeables pour valoriser vos compétences."
+          />
+          <FeatureCard
+            icon={<Users className="h-10 w-10 text-primary" />}
+            title="Créateurs Experts"
+            description="Apprenez auprès de créateurs passionnés et bénéficiez de leurs retours personnalisés."
           />
         </div>
       </section>
@@ -112,14 +148,14 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-border py-12">
         <div className="container mx-auto px-4">
-          <div className="grid gap-8 md:grid-cols-4">
+          <div className="grid gap-8 md:grid-cols-3">
             <div>
               <div className="mb-4 flex items-center space-x-2">
                 <Code2 className="h-6 w-6 text-primary" />
                 <span className="font-bold">SkillForge</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Forge your professional skills in the fire of action.
+                Plateforme de formation en ligne nouvelle génération.
               </p>
             </div>
             <div>
@@ -127,57 +163,37 @@ export default function HomePage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <Link href="/courses" className="hover:text-foreground transition-colors">
-                    Cours
+                    Catalogue de cours
                   </Link>
                 </li>
                 <li>
-                  <Link href="/sandbox" className="hover:text-foreground transition-colors">
-                    Sandbox
+                  <Link href="/signup" className="hover:text-foreground transition-colors">
+                    Créer un compte
                   </Link>
                 </li>
                 <li>
-                  <Link href="/pricing" className="hover:text-foreground transition-colors">
-                    Tarifs
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-4 font-semibold">Ressources</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link href="/docs" className="hover:text-foreground transition-colors">
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/blog" className="hover:text-foreground transition-colors">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/community" className="hover:text-foreground transition-colors">
-                    Communauté
+                  <Link href="/login" className="hover:text-foreground transition-colors">
+                    Se connecter
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h3 className="mb-4 font-semibold">Entreprise</h3>
+              <h3 className="mb-4 font-semibold">Légal</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link href="/about" className="hover:text-foreground transition-colors">
-                    À propos
+                  <Link href="/legal/terms" className="hover:text-foreground transition-colors">
+                    CGV
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="hover:text-foreground transition-colors">
-                    Contact
+                  <Link href="/legal/privacy" className="hover:text-foreground transition-colors">
+                    Confidentialité
                   </Link>
                 </li>
                 <li>
-                  <Link href="/careers" className="hover:text-foreground transition-colors">
-                    Carrières
+                  <Link href="/legal/mentions" className="hover:text-foreground transition-colors">
+                    Mentions légales
                   </Link>
                 </li>
               </ul>

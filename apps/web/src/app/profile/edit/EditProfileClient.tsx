@@ -1,18 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
-import { ArrowLeft, Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, CheckCircle, XCircle, User } from 'lucide-react';
 
 export function EditProfileClient() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -22,28 +27,39 @@ export function EditProfileClient() {
     github: '',
     linkedin: '',
     twitter: '',
+    avatarUrl: '',
   });
 
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
+
       if (!currentUser) {
         router.push('/login');
         return;
       }
 
       setUser(currentUser);
-      
+
+      // Charger le profil depuis la table profiles
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+      setProfile(profileData);
+
       // Charger les données du profil
       setFormData({
-        firstName: currentUser.user_metadata?.first_name || '',
-        lastName: currentUser.user_metadata?.last_name || '',
-        bio: currentUser.user_metadata?.bio || '',
-        website: currentUser.user_metadata?.website || '',
-        github: currentUser.user_metadata?.github || '',
-        linkedin: currentUser.user_metadata?.linkedin || '',
-        twitter: currentUser.user_metadata?.twitter || '',
+        firstName: profileData?.first_name || currentUser.user_metadata?.first_name || '',
+        lastName: profileData?.last_name || currentUser.user_metadata?.last_name || '',
+        bio: profileData?.bio || currentUser.user_metadata?.bio || '',
+        website: profileData?.website || currentUser.user_metadata?.website || '',
+        github: profileData?.github || currentUser.user_metadata?.github || '',
+        linkedin: profileData?.linkedin || currentUser.user_metadata?.linkedin || '',
+        twitter: profileData?.twitter || currentUser.user_metadata?.twitter || '',
+        avatarUrl: profileData?.avatar_url || currentUser.user_metadata?.avatar_url || '',
       });
 
       setLoading(false);
@@ -59,40 +75,123 @@ export function EditProfileClient() {
     });
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validation du fichier
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Format non autorisé. Utilisez JPG, PNG ou WebP' });
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setMessage({ type: 'error', text: 'Le fichier ne doit pas dépasser 5MB' });
+      return;
+    }
+
+    // Aperçu local
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload vers le serveur
+    setUploadingAvatar(true);
+    setMessage(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Session expirée');
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', file);
+
+      const response = await fetch('/api/profile/upload-avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: formDataToSend,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de l\'upload');
+      }
+
+      setFormData({
+        ...formData,
+        avatarUrl: data.avatar_url,
+      });
+
+      setMessage({ type: 'success', text: 'Avatar uploadé avec succès !' });
+    } catch (error: any) {
+      console.error('Erreur upload avatar:', error);
+      setMessage({ type: 'error', text: error.message || 'Erreur lors de l\'upload' });
+      setAvatarPreview(null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setMessage(null);
 
     try {
-      // Mettre à jour le profil dans Supabase
-      const { error } = await supabase.auth.updateUser({
-        data: {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Session expirée');
+      }
+
+      // Appeler l'API de mise à jour du profil
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
           first_name: formData.firstName,
           last_name: formData.lastName,
-          full_name: `${formData.firstName} ${formData.lastName}`,
           bio: formData.bio,
+          avatar_url: formData.avatarUrl,
           website: formData.website,
           github: formData.github,
           linkedin: formData.linkedin,
           twitter: formData.twitter,
-        },
+        }),
       });
 
-      if (error) {
-        setMessage({ type: 'error', text: error.message });
-        setSaving(false);
-        return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la mise à jour');
       }
 
       setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' });
-      
+
       // Rediriger après 2 secondes
       setTimeout(() => {
         router.push('/profile');
+        router.refresh();
       }, 2000);
     } catch (error: any) {
-      setMessage({ type: 'error', text: 'Une erreur est survenue' });
+      console.error('Erreur mise à jour profil:', error);
+      setMessage({ type: 'error', text: error.message || 'Une erreur est survenue' });
       setSaving(false);
     }
   };
@@ -136,15 +235,44 @@ export function EditProfileClient() {
           <div className="rounded-lg border border-border bg-card p-6">
             <h2 className="mb-4 text-xl font-semibold">Photo de profil</h2>
             <div className="flex items-center gap-6">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-blue-500/20 text-3xl font-bold">
-                {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
+              <div className="relative h-24 w-24">
+                {avatarPreview || formData.avatarUrl ? (
+                  <Image
+                    src={avatarPreview || formData.avatarUrl}
+                    alt="Avatar"
+                    width={96}
+                    height={96}
+                    className="h-24 w-24 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-blue-500/20 text-3xl font-bold">
+                    {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
+                  </div>
+                )}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                  </div>
+                )}
               </div>
               <div>
-                <button type="button" className="mb-2 flex items-center gap-2 rounded-lg border border-border px-4 py-2 hover:bg-accent">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/jpg"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={handleAvatarClick}
+                  disabled={uploadingAvatar}
+                  className="mb-2 flex items-center gap-2 rounded-lg border border-border px-4 py-2 hover:bg-accent disabled:opacity-50"
+                >
                   <Upload className="h-4 w-4" />
-                  Changer la photo
+                  {uploadingAvatar ? 'Upload en cours...' : 'Changer la photo'}
                 </button>
-                <p className="text-xs text-muted-foreground">JPG, PNG jusqu'à 5MB</p>
+                <p className="text-xs text-muted-foreground">JPG, PNG ou WebP jusqu'à 5MB</p>
               </div>
             </div>
           </div>

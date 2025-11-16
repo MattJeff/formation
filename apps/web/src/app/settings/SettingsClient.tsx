@@ -244,7 +244,7 @@ export function SettingsClient() {
             </div>
           </div>
 
-          {/* Section: Abonnement */}
+          {/* Section: Abonnement - Disabled for MVP
           <div className="rounded-lg border border-border bg-card p-6">
             <div className="mb-4 flex items-center gap-3">
               <CreditCard className="h-5 w-5 text-primary" />
@@ -261,6 +261,7 @@ export function SettingsClient() {
               </Link>
             </div>
           </div>
+          */}
 
           {/* Section: Préférences */}
           <div className="rounded-lg border border-border bg-card p-6">

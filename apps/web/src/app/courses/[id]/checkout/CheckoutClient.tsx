@@ -19,6 +19,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Loader2, CreditCard, Shield, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { useAuth } from '@/providers/AuthProvider';
@@ -267,11 +268,15 @@ export function CheckoutClient({ courseId }: CheckoutClientProps) {
             <div className="rounded-lg border border-border bg-card p-6">
               <div className="flex gap-4">
                 {course?.cover_image && (
-                  <img
-                    src={course.cover_image}
-                    alt={course.title}
-                    className="h-24 w-24 rounded-lg object-cover"
-                  />
+                  <div className="relative h-24 w-24 flex-shrink-0 rounded-lg overflow-hidden">
+                    <Image
+                      src={course.cover_image}
+                      alt={course.title}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                  </div>
                 )}
                 <div className="flex-1">
                   <h3 className="mb-1 text-xl font-semibold">{course?.title}</h3>

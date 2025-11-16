@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { Header } from '@/components/layout/Header';
@@ -20,6 +21,14 @@ export function CreatorDashboardClient() {
     engagement: 0,
     activeCourses: 0
   });
+  const [statsChanges, setStatsChanges] = useState({
+    revenueChange: 0,
+    studentsChange: 0,
+    engagementChange: 0,
+    activeCoursesChange: 0
+  });
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentReviews, setRecentReviews] = useState<any[]>([]);
 
   useEffect(() => {
     console.log('🔄 [DASHBOARD] useEffect appelé - authLoading:', authLoading, 'user:', !!user, 'userId:', user?.id, 'hasAttempted:', hasAttemptedLoad);
@@ -128,6 +137,104 @@ export function CreatorDashboardClient() {
       });
 
       console.log('✅ [DASHBOARD] Stats calculées:', { revenue, totalStudents, engagement, activeCourses });
+
+      // Calculer les variations (30 derniers jours vs. 30 jours précédents)
+      const now = new Date();
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const previous30Days = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+      // Enrollments des 30 derniers jours
+      const recentEnrollments = enrollments?.filter(e =>
+        new Date(e.created_at) >= last30Days
+      ) || [];
+
+      // Enrollments des 30 jours précédents
+      const previousEnrollments = enrollments?.filter(e =>
+        new Date(e.created_at) >= previous30Days &&
+        new Date(e.created_at) < last30Days
+      ) || [];
+
+      // Calculer revenus période précédente
+      let previousRevenue = 0;
+      previousEnrollments.forEach(enrollment => {
+        const course = allCourses.find(c => c.id === enrollment.course_id);
+        if (course) previousRevenue += course.price || 0;
+      });
+
+      // Calculer les changements en pourcentage
+      const revenueChange = previousRevenue > 0
+        ? Math.round(((revenue - previousRevenue) / previousRevenue) * 100)
+        : (revenue > 0 ? 100 : 0);
+
+      const studentsChange = previousEnrollments.length > 0
+        ? Math.round(((recentEnrollments.length - previousEnrollments.length) / previousEnrollments.length) * 100)
+        : (recentEnrollments.length > 0 ? 100 : 0);
+
+      setStatsChanges({
+        revenueChange,
+        studentsChange,
+        engagementChange: 0, // Pas de comparaison pour l'engagement
+        activeCoursesChange: activeCourses
+      });
+
+      // Charger activité récente (5 dernières inscriptions)
+      const { data: recentEnrollmentsData } = await supabase
+        .from('enrollments')
+        .select('id, created_at, course_id, user_id')
+        .in('course_id', allCourses.map(c => c.id))
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Enrichir avec les données utilisateur et cours
+      const enrichedActivity = await Promise.all(
+        (recentEnrollmentsData || []).map(async (enrollment) => {
+          const { data: user } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, email')
+            .eq('id', enrollment.user_id)
+            .single();
+
+          const course = allCourses.find(c => c.id === enrollment.course_id);
+
+          return {
+            ...enrollment,
+            user,
+            course: { title: course?.title }
+          };
+        })
+      );
+
+      setRecentActivity(enrichedActivity);
+
+      // Charger avis récents (5 derniers)
+      const { data: reviewsData } = await supabase
+        .from('reviews')
+        .select('id, rating, comment, created_at, user_id, course_id')
+        .in('course_id', allCourses.map(c => c.id))
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Enrichir avec les données utilisateur et cours
+      const enrichedReviews = await Promise.all(
+        (reviewsData || []).map(async (review) => {
+          const { data: user } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', review.user_id)
+            .single();
+
+          const course = allCourses.find(c => c.id === review.course_id);
+
+          return {
+            ...review,
+            user,
+            course: { title: course?.title }
+          };
+        })
+      );
+
+      setRecentReviews(enrichedReviews);
+
     } catch (error) {
       console.error('❌ [DASHBOARD] Error loading courses:', error);
     } finally {
@@ -147,7 +254,8 @@ export function CreatorDashboardClient() {
     {
       label: 'Revenus totaux',
       value: `${stats.revenue}€`,
-      change: '+0%',
+      change: statsChanges.revenueChange > 0 ? `+${statsChanges.revenueChange}%` : `${statsChanges.revenueChange}%`,
+      changeColor: statsChanges.revenueChange >= 0 ? 'text-green-500' : 'text-red-500',
       icon: DollarSign,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10'
@@ -155,7 +263,8 @@ export function CreatorDashboardClient() {
     {
       label: 'Total étudiants',
       value: stats.students.toString(),
-      change: '+0%',
+      change: statsChanges.studentsChange > 0 ? `+${statsChanges.studentsChange}%` : `${statsChanges.studentsChange}%`,
+      changeColor: statsChanges.studentsChange >= 0 ? 'text-green-500' : 'text-red-500',
       icon: Users,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10'
@@ -163,7 +272,8 @@ export function CreatorDashboardClient() {
     {
       label: "Taux d'engagement",
       value: `${stats.engagement}%`,
-      change: '+0%',
+      change: '30 derniers jours',
+      changeColor: 'text-muted-foreground',
       icon: TrendingUp,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10'
@@ -171,7 +281,8 @@ export function CreatorDashboardClient() {
     {
       label: 'Cours actifs',
       value: stats.activeCourses.toString(),
-      change: `+${stats.activeCourses}`,
+      change: `${stats.activeCourses} publiés`,
+      changeColor: 'text-muted-foreground',
       icon: BookOpen,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10'
@@ -183,7 +294,7 @@ export function CreatorDashboardClient() {
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="mb-2 text-3xl font-bold">
               Bienvenue, {user?.user_metadata?.first_name || 'Créateur'} ! 👨‍🏫
@@ -192,9 +303,9 @@ export function CreatorDashboardClient() {
               Gérez vos cours et suivez vos performances
             </p>
           </div>
-          <Link 
-            href="/creator/courses/new" 
-            className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+          <Link
+            href="/creator/courses/new"
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 sm:flex-shrink-0"
           >
             <Plus className="h-5 w-5" />
             Nouveau cours
@@ -209,7 +320,7 @@ export function CreatorDashboardClient() {
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground">{stat.label}</p>
                   <p className="mt-2 text-3xl font-bold">{stat.value}</p>
-                  <p className="mt-1 text-sm text-green-500">{stat.change}</p>
+                  <p className={`mt-1 text-sm ${stat.changeColor}`}>{stat.change}</p>
                 </div>
                 <div className={`flex h-12 w-12 items-center justify-center rounded-full ${stat.bgColor}`}>
                   <stat.icon className={`h-6 w-6 ${stat.color}`} />
@@ -236,6 +347,7 @@ export function CreatorDashboardClient() {
             </p>
           </Link>
 
+          {/* TODO: Implement upload content feature
           <Link
             href="/creator/upload"
             className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
@@ -250,7 +362,9 @@ export function CreatorDashboardClient() {
               Ajoutez des vidéos et ressources
             </p>
           </Link>
+          */}
 
+          {/* TODO: Implement sandbox project feature
           <Link
             href="/creator/projects/new"
             className="group rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-lg"
@@ -265,6 +379,7 @@ export function CreatorDashboardClient() {
               Projet pratique pour vos étudiants
             </p>
           </Link>
+          */}
         </div>
 
         {/* Empty State - Vos cours */}
@@ -308,12 +423,14 @@ export function CreatorDashboardClient() {
                   href={`/creator/courses/${course.id}/edit`}
                   className="group overflow-hidden rounded-lg border border-border transition-all hover:border-primary hover:shadow-lg"
                 >
-                  <div className="aspect-video overflow-hidden bg-secondary">
+                  <div className="relative aspect-video overflow-hidden bg-secondary">
                     {course.cover_image ? (
-                      <img
+                      <Image
                         src={course.cover_image}
                         alt={course.title}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
@@ -350,20 +467,90 @@ export function CreatorDashboardClient() {
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="mb-4 text-lg font-semibold">Activité récente</h3>
             <div className="space-y-4">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Aucune activité récente</span>
-              </div>
+              {recentActivity.length === 0 ? (
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>Aucune activité récente</span>
+                </div>
+              ) : (
+                recentActivity.map((activity: any) => {
+                  const userName = activity.user?.first_name && activity.user?.last_name
+                    ? `${activity.user.first_name} ${activity.user.last_name}`
+                    : activity.user?.email || 'Étudiant';
+                  const timeAgo = new Date(activity.created_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short'
+                  });
+
+                  return (
+                    <div key={activity.id} className="flex items-start gap-3 text-sm">
+                      <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                        <Users className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{userName}</p>
+                        <p className="text-muted-foreground">
+                          s'est inscrit à <span className="font-medium">{activity.course?.title}</span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">{timeAgo}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="mb-4 text-lg font-semibold">Avis récents</h3>
             <div className="space-y-4">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <Star className="h-4 w-4" />
-                <span>Aucun avis pour le moment</span>
-              </div>
+              {recentReviews.length === 0 ? (
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <Star className="h-4 w-4" />
+                  <span>Aucun avis pour le moment</span>
+                </div>
+              ) : (
+                recentReviews.map((review: any) => {
+                  const userName = review.user?.first_name && review.user?.last_name
+                    ? `${review.user.first_name} ${review.user.last_name}`
+                    : 'Étudiant';
+                  const timeAgo = new Date(review.created_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short'
+                  });
+
+                  return (
+                    <div key={review.id} className="flex items-start gap-3 text-sm">
+                      <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500/10">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{userName}</p>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-3 w-3 ${
+                                  i < review.rating
+                                    ? 'fill-yellow-500 text-yellow-500'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground line-clamp-2">
+                          {review.comment || 'Pas de commentaire'}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {review.course?.title} • {timeAgo}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

@@ -114,6 +114,19 @@ export async function POST(req: NextRequest) {
         await handlePaymentFailed(event);
         break;
 
+      case 'charge.refunded':
+        await handleChargeRefunded(event);
+        break;
+
+      // Stripe Connect events
+      case 'account.updated':
+        await handleAccountUpdated(event);
+        break;
+
+      case 'account.application.deauthorized':
+        await handleAccountDeauthorized(event);
+        break;
+
       default:
         console.log(`ℹ️ [STRIPE WEBHOOK] Event non géré: ${event.type}`);
     }
@@ -193,7 +206,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
       user_id: metadata.userId,
       course_id: metadata.courseId,
       payment_status: 'paid',
-      payment_amount: (session.amount_total || 0) / 100, // Convertir centimes en euros
+      payment_amount: (session.amount_total || 0) / 100, // Stripe retourne en centimes, on converti en euros
       stripe_session_id: session.id,
       stripe_payment_intent_id: session.payment_intent as string,
       status: 'active',
@@ -304,4 +317,158 @@ async function handlePaymentFailed(event: Stripe.Event) {
   console.error('Raison:', paymentIntent.last_payment_error?.message);
 
   // TODO: Notifier l'utilisateur par email ?
+}
+
+// ============================================
+// 💸 GESTION: CHARGE REFUNDED
+// ============================================
+// Déclenché quand un remboursement est effectué
+
+async function handleChargeRefunded(event: Stripe.Event) {
+  const charge = event.data.object as Stripe.Charge;
+
+  console.log('💸 [STRIPE WEBHOOK] Remboursement détecté:', charge.id);
+  console.log('💰 [STRIPE WEBHOOK] Montant remboursé:', charge.amount_refunded, 'centimes');
+
+  // Récupérer le payment_intent pour trouver l'enrollment
+  const paymentIntentId = charge.payment_intent as string;
+
+  if (!paymentIntentId) {
+    console.error('❌ [STRIPE WEBHOOK] Pas de payment_intent_id dans le charge');
+    return;
+  }
+
+  console.log('🔍 [STRIPE WEBHOOK] Recherche enrollment avec payment_intent:', paymentIntentId);
+
+  // Trouver l'enrollment correspondant
+  const { data: enrollment, error: enrollmentError } = await supabase
+    .from('enrollments')
+    .select('*')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .single();
+
+  if (enrollmentError || !enrollment) {
+    console.error('❌ [STRIPE WEBHOOK] Enrollment non trouvé:', enrollmentError);
+    return;
+  }
+
+  console.log('✅ [STRIPE WEBHOOK] Enrollment trouvé:', enrollment.id);
+
+  // Mettre à jour le statut de l'enrollment
+  const { error: updateError } = await supabase
+    .from('enrollments')
+    .update({
+      payment_status: 'refunded',
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', enrollment.id);
+
+  if (updateError) {
+    console.error('❌ [STRIPE WEBHOOK] Erreur mise à jour enrollment:', updateError);
+    throw updateError;
+  }
+
+  console.log('✅ [STRIPE WEBHOOK] Enrollment mis à jour (status: cancelled, payment: refunded)');
+
+  // TODO: Envoyer email de confirmation de remboursement à l'étudiant
+  console.log('📧 [STRIPE WEBHOOK] Email de confirmation de remboursement à envoyer (TODO)');
+}
+
+// ============================================
+// 🔗 GESTION: ACCOUNT UPDATED (Stripe Connect)
+// ============================================
+// Déclenché quand un compte Stripe Connect est mis à jour
+
+async function handleAccountUpdated(event: Stripe.Event) {
+  const account = event.data.object as Stripe.Account;
+
+  console.log('🔗 [STRIPE WEBHOOK] Compte Stripe Connect mis à jour:', account.id);
+
+  // Trouver le créateur avec cet account ID
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .eq('stripe_account_id', account.id)
+    .single();
+
+  if (profileError || !profile) {
+    console.log('⚠️ [STRIPE WEBHOOK] Profil non trouvé pour account:', account.id);
+    return;
+  }
+
+  console.log('👤 [STRIPE WEBHOOK] Profil trouvé:', profile.email);
+
+  // Déterminer le nouveau statut
+  let status: 'not_connected' | 'pending' | 'connected' = 'pending';
+  let onboardingCompleted = false;
+
+  if (account.charges_enabled && account.payouts_enabled && account.details_submitted) {
+    status = 'connected';
+    onboardingCompleted = true;
+    console.log('✅ [STRIPE WEBHOOK] Compte entièrement configuré');
+  } else if (account.details_submitted) {
+    status = 'pending';
+    console.log('⏳ [STRIPE WEBHOOK] Compte en attente de vérification');
+  } else {
+    status = 'pending';
+    console.log('📝 [STRIPE WEBHOOK] Onboarding non terminé');
+  }
+
+  // Mettre à jour le profil
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      stripe_account_status: status,
+      stripe_onboarding_completed: onboardingCompleted,
+    })
+    .eq('id', profile.id);
+
+  if (updateError) {
+    console.error('❌ [STRIPE WEBHOOK] Erreur mise à jour profil:', updateError);
+  } else {
+    console.log('✅ [STRIPE WEBHOOK] Profil mis à jour:', { status, onboardingCompleted });
+  }
+}
+
+// ============================================
+// 🔓 GESTION: ACCOUNT DEAUTHORIZED (Stripe Connect)
+// ============================================
+// Déclenché quand un créateur déconnecte son compte Stripe
+
+async function handleAccountDeauthorized(event: Stripe.Event) {
+  const deauthorization = event.data.object as any;
+  const accountId = deauthorization.account;
+
+  console.log('🔓 [STRIPE WEBHOOK] Compte déconnecté:', accountId);
+
+  // Trouver le créateur avec cet account ID
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .eq('stripe_account_id', accountId)
+    .single();
+
+  if (profileError || !profile) {
+    console.log('⚠️ [STRIPE WEBHOOK] Profil non trouvé pour account:', accountId);
+    return;
+  }
+
+  console.log('👤 [STRIPE WEBHOOK] Profil trouvé:', profile.email);
+
+  // Réinitialiser le statut Stripe
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      stripe_account_status: 'not_connected',
+      stripe_onboarding_completed: false,
+      // On garde stripe_account_id pour historique
+    })
+    .eq('id', profile.id);
+
+  if (updateError) {
+    console.error('❌ [STRIPE WEBHOOK] Erreur mise à jour profil:', updateError);
+  } else {
+    console.log('✅ [STRIPE WEBHOOK] Profil réinitialisé');
+  }
 }

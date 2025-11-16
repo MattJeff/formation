@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/providers/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
 import { Header } from '@/components/layout/Header';
@@ -71,7 +72,20 @@ export function DashboardClient() {
       }
 
       console.log('✅ [DASHBOARD] Inscriptions chargées:', data?.length || 0);
-      setEnrollments(data as EnrollmentWithCourse[] || []);
+
+      // Transformer les données pour correspondre au type attendu
+      const transformedData = data?.map((enrollment: any) => {
+        const courses = Array.isArray(enrollment.courses) ? enrollment.courses[0] : enrollment.courses;
+        if (courses && courses.profiles && Array.isArray(courses.profiles)) {
+          courses.profiles = courses.profiles[0];
+        }
+        return {
+          ...enrollment,
+          courses,
+        };
+      }) || [];
+
+      setEnrollments(transformedData as EnrollmentWithCourse[]);
     } catch (error) {
       console.error('❌ [DASHBOARD] Erreur:', error);
     } finally {
@@ -176,16 +190,16 @@ export function DashboardClient() {
               <p className="mb-6 text-muted-foreground">
                 Vous n'avez pas encore de cours. Explorez notre catalogue et commencez à apprendre !
               </p>
-              <div className="flex justify-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link
                   href="/courses"
-                  className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+                  className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 text-center"
                 >
                   Explorer les cours
                 </Link>
                 <Link
                   href="/categories"
-                  className="rounded-lg border border-border px-6 py-3 font-semibold hover:bg-accent"
+                  className="rounded-lg border border-border px-6 py-3 font-semibold hover:bg-accent text-center"
                 >
                   Parcourir par catégorie
                 </Link>
@@ -204,11 +218,13 @@ export function DashboardClient() {
                     href={`/learn/${enrollment.courses.id}`}
                     className="group rounded-lg border border-border bg-card overflow-hidden hover:border-primary transition-all"
                   >
-                    <div className="relative">
-                      <img
+                    <div className="relative aspect-video w-full">
+                      <Image
                         src={enrollment.courses.cover_image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'}
                         alt={enrollment.courses.title}
-                        className="aspect-video w-full object-cover"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover"
                       />
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <PlayCircle className="h-16 w-16 text-white" />

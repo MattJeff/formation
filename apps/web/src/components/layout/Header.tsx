@@ -1,20 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings, TrendingUp } from 'lucide-react';
+import { LogOut, User, Settings, TrendingUp, CreditCard, Menu, X } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/lib/supabase';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Header() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const loading = authLoading || profileLoading;
   const isCreator = profile?.role === 'creator';
   const isLearner = profile?.role === 'learner';
+  
+  //console.log('📡 [HEADER] Render - User:', user?.email, 'Role:', profile?.role);
 
   // Afficher un skeleton pendant le chargement
   if (loading) {
@@ -33,6 +38,7 @@ export function Header() {
   }
 
   const handleLogout = async () => {
+    console.log('🚪 [HEADER] Déconnexion...');
     await supabase.auth.signOut();
     router.push('/');
   };
@@ -46,7 +52,8 @@ export function Header() {
             SkillForge
           </div>
 
-          <nav className="flex items-center space-x-6">
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-4">
             <Link href="/courses" className="text-sm hover:text-primary">
               Catalogue
             </Link>
@@ -56,7 +63,10 @@ export function Header() {
             <Link href="/dashboard" className="text-sm hover:text-primary">
               Tableau de bord
             </Link>
-            
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Dropdown Menu */}
             <div className="relative group">
               <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent">
@@ -87,7 +97,75 @@ export function Header() {
               </div>
             </div>
           </nav>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-accent"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background">
+            <nav className="container mx-auto px-4 py-4 space-y-2">
+              <Link
+                href="/courses"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Catalogue
+              </Link>
+              <Link
+                href="/my-courses"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Mes Cours
+              </Link>
+              <Link
+                href="/dashboard"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Tableau de bord
+              </Link>
+              <hr className="border-border" />
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <User className="h-4 w-4" />
+                Mon Profil
+              </Link>
+              <Link
+                href="/settings"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Settings className="h-4 w-4" />
+                Paramètres
+              </Link>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="flex w-full items-center gap-2 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="h-4 w-4" />
+                Déconnexion
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
     );
   }
@@ -101,7 +179,8 @@ export function Header() {
             SkillForge
           </div>
 
-          <nav className="flex items-center space-x-6">
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-4">
             <Link href="/creator/dashboard" className="text-sm hover:text-primary">
               Dashboard
             </Link>
@@ -114,7 +193,10 @@ export function Header() {
             <Link href="/creator/analytics" className="text-sm hover:text-primary">
               Analytics
             </Link>
-            
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Dropdown Menu */}
             <div className="relative group">
               <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent">
@@ -132,9 +214,15 @@ export function Header() {
                     <User className="h-4 w-4" />
                     Mon Profil
                   </Link>
+                  {/* TODO: Implement earnings page
                   <Link href="/creator/earnings" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent">
                     <TrendingUp className="h-4 w-4" />
                     Revenus
+                  </Link>
+                  */}
+                  <Link href="/creator/settings/stripe" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent">
+                    <CreditCard className="h-4 w-4" />
+                    Paiements Stripe
                   </Link>
                   <Link href="/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent">
                     <Settings className="h-4 w-4" />
@@ -149,7 +237,100 @@ export function Header() {
               </div>
             </div>
           </nav>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-accent"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background">
+            <nav className="container mx-auto px-4 py-4 space-y-2">
+              <Link
+                href="/creator/dashboard"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/creator/courses"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Mes Formations
+              </Link>
+              <Link
+                href="/creator/students"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Étudiants
+              </Link>
+              <Link
+                href="/creator/analytics"
+                className="block px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Analytics
+              </Link>
+              <hr className="border-border" />
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <User className="h-4 w-4" />
+                Mon Profil
+              </Link>
+              {/* TODO: Implement earnings page
+              <Link
+                href="/creator/earnings"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <TrendingUp className="h-4 w-4" />
+                Revenus
+              </Link>
+              */}
+              <Link
+                href="/creator/settings/stripe"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <CreditCard className="h-4 w-4" />
+                Paiements Stripe
+              </Link>
+              <Link
+                href="/settings"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Settings className="h-4 w-4" />
+                Paramètres
+              </Link>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="flex w-full items-center gap-2 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="h-4 w-4" />
+                Déconnexion
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
     );
   }
@@ -162,10 +343,15 @@ export function Header() {
           SkillForge
         </div>
 
-        <nav className="flex items-center space-x-6">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-4">
           <Link href="/courses" className="text-sm hover:text-primary">
             Cours
           </Link>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           <Link href="/login" className="text-sm hover:text-primary">
             Connexion
           </Link>
@@ -176,7 +362,48 @@ export function Header() {
             S'inscrire
           </Link>
         </nav>
+
+        {/* Mobile Navigation */}
+        <div className="flex md:hidden items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-lg hover:bg-accent"
+            aria-label="Menu"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background">
+          <nav className="container mx-auto px-4 py-4 space-y-2">
+            <Link
+              href="/courses"
+              className="block px-4 py-3 rounded-lg hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Cours
+            </Link>
+            <Link
+              href="/login"
+              className="block px-4 py-3 rounded-lg hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Connexion
+            </Link>
+            <Link
+              href="/signup"
+              className="block px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-center font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              S'inscrire
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

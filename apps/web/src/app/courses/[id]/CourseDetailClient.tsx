@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
+import { ReviewsSection } from '@/components/course/ReviewsSection';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import {
@@ -61,6 +63,8 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
         .from('courses')
         .select(`
           *,
+          average_rating,
+          total_reviews,
           profiles:creator_id (first_name, last_name, avatar_url),
           sections(
             id,
@@ -219,13 +223,18 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
             {/* Right: Course Card */}
             <div className="lg:pl-8">
-              <div className="sticky top-24 overflow-hidden rounded-lg border border-border bg-card shadow-lg">
+              <div className="lg:sticky lg:top-24 overflow-hidden rounded-lg border border-border bg-card shadow-lg">
                 {course.cover_image && (
-                  <img
-                    src={course.cover_image}
-                    alt={course.title}
-                    className="aspect-video w-full object-cover"
-                  />
+                  <div className="relative aspect-video w-full">
+                    <Image
+                      src={course.cover_image}
+                      alt={course.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
+                      className="object-cover"
+                      priority
+                    />
+                  </div>
                 )}
                 <div className="p-6">
                   {!user && (
@@ -431,6 +440,14 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                 </ul>
               </div>
             )}
+
+            {/* Reviews Section */}
+            <ReviewsSection
+              courseId={courseId}
+              averageRating={course.average_rating || 0}
+              totalReviews={course.total_reviews || 0}
+              isEnrolled={isEnrolled}
+            />
           </div>
 
           {/* Right: Sidebar */}
