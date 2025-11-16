@@ -5,10 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
-  Menu,
-  X,
   Play,
-  Check,
   Star,
   TrendingUp,
   BookOpen,
@@ -18,10 +15,10 @@ import {
   Rocket,
   ChevronRight
 } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 
 export default function HomePage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
   // Auto-rotate testimonials
@@ -61,105 +58,7 @@ export default function HomePage() {
       </div>
 
       {/* Header */}
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl"
-      >
-        <div className="container mx-auto flex h-20 items-center justify-between px-4">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-              className="relative"
-            >
-              <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl group-hover:bg-primary/40 transition-all" />
-              <Sparkles className="relative h-10 w-10 text-primary" />
-            </motion.div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary via-blue-500 to-purple-500 bg-clip-text text-transparent">
-              SkillForge
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/courses" className="text-sm font-medium hover:text-primary transition-colors">
-              Cours
-            </Link>
-            <Link href="/faq" className="text-sm font-medium hover:text-primary transition-colors">
-              Aide
-            </Link>
-            <ThemeToggle />
-            <Link
-              href="/login"
-              className="rounded-full px-6 py-2.5 text-sm font-medium border border-border hover:bg-accent transition-all"
-            >
-              Connexion
-            </Link>
-            <Link
-              href="/signup"
-              className="group relative rounded-full bg-gradient-to-r from-primary to-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:shadow-lg hover:shadow-primary/50 transition-all"
-            >
-              <span className="relative z-10">Commencer</span>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-          </nav>
-
-          {/* Mobile Navigation */}
-          <div className="flex md:hidden items-center gap-2">
-            <ThemeToggle />
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg hover:bg-accent"
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-xl"
-            >
-              <nav className="container mx-auto px-4 py-4 space-y-2">
-                <Link
-                  href="/courses"
-                  className="block px-4 py-3 rounded-lg hover:bg-accent"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Cours
-                </Link>
-                <Link
-                  href="/faq"
-                  className="block px-4 py-3 rounded-lg hover:bg-accent"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Aide
-                </Link>
-                <Link
-                  href="/login"
-                  className="block px-4 py-3 rounded-lg hover:bg-accent text-center"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Connexion
-                </Link>
-                <Link
-                  href="/signup"
-                  className="block px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-center font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Commencer gratuitement
-                </Link>
-              </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.header>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative container mx-auto px-4 pt-20 pb-32">
@@ -346,31 +245,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-32 bg-gradient-to-b from-secondary/20 to-background">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Tarifs transparents, succès garanti
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Choisissez le plan qui vous correspond
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <PricingCard key={index} {...plan} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="relative py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-blue-600 to-purple-600 opacity-90" />
@@ -423,48 +297,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-secondary/20 py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <Link href="/" className="flex items-center gap-2 mb-4">
-                <Sparkles className="h-8 w-8 text-primary" />
-                <span className="text-xl font-bold">SkillForge</span>
-              </Link>
-              <p className="text-sm text-muted-foreground">
-                La plateforme qui transforme l'apprentissage en ligne
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Produit</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/courses" className="hover:text-foreground transition-colors">Catalogue</Link></li>
-                <li><Link href="/faq" className="hover:text-foreground transition-colors">Aide</Link></li>
-                <li><Link href="/signup" className="hover:text-foreground transition-colors">S'inscrire</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Entreprise</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/corporate" className="hover:text-foreground transition-colors">Corporate</Link></li>
-                <li><Link href="/education" className="hover:text-foreground transition-colors">Éducation</Link></li>
-                <li><Link href="/creators" className="hover:text-foreground transition-colors">Créateurs</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Légal</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/legal/terms" className="hover:text-foreground transition-colors">CGU</Link></li>
-                <li><Link href="/legal/privacy" className="hover:text-foreground transition-colors">Confidentialité</Link></li>
-                <li><Link href="/legal/mentions" className="hover:text-foreground transition-colors">Mentions</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} SkillForge. Tous droits réservés.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
@@ -517,71 +350,6 @@ function FeatureCard({
   );
 }
 
-function PricingCard({
-  name,
-  price,
-  description,
-  features,
-  popular,
-  index,
-}: {
-  name: string;
-  price: string;
-  description: string;
-  features: string[];
-  popular?: boolean;
-  index: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ y: -8 }}
-      className={`relative rounded-3xl border p-8 ${
-        popular
-          ? 'border-primary bg-gradient-to-b from-primary/5 to-transparent shadow-2xl shadow-primary/20'
-          : 'border-border bg-card/50 backdrop-blur-sm'
-      }`}
-    >
-      {popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="rounded-full bg-gradient-to-r from-primary to-purple-600 px-4 py-1 text-xs font-semibold text-white">
-            POPULAIRE
-          </span>
-        </div>
-      )}
-      <div className="mb-8">
-        <h3 className="text-2xl font-bold mb-2">{name}</h3>
-        <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-5xl font-bold">{price}</span>
-          {price !== 'Gratuit' && <span className="text-muted-foreground">/cours</span>}
-        </div>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
-      <ul className="space-y-4 mb-8">
-        {features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-3">
-            <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-            <span className="text-sm">{feature}</span>
-          </li>
-        ))}
-      </ul>
-      <Link
-        href="/signup"
-        className={`block w-full rounded-xl py-3 text-center font-semibold transition-all ${
-          popular
-            ? 'bg-primary text-white hover:bg-primary/90 shadow-lg hover:shadow-primary/50'
-            : 'border border-border hover:bg-accent'
-        }`}
-      >
-        Commencer
-      </Link>
-    </motion.div>
-  );
-}
-
 // Data
 
 const features = [
@@ -625,41 +393,3 @@ const testimonials = [
   },
 ];
 
-const pricingPlans = [
-  {
-    name: 'Découverte',
-    price: 'Gratuit',
-    description: 'Idéal pour commencer',
-    features: [
-      'Accès aux cours gratuits',
-      'Communauté d\'apprenants',
-      'Certificats de participation',
-      'Support par email',
-    ],
-  },
-  {
-    name: 'Pro',
-    price: '49€',
-    description: 'Pour les passionnés',
-    features: [
-      'Accès illimité à tous les cours',
-      'Certificats officiels',
-      'Support prioritaire',
-      'Projets exclusifs',
-      'Mentorat mensuel',
-    ],
-    popular: true,
-  },
-  {
-    name: 'Business',
-    price: '99€',
-    description: 'Pour les entreprises',
-    features: [
-      'Tout du plan Pro',
-      'Formations sur mesure',
-      'Dashboard analytics',
-      'Support dédié 24/7',
-      'Facturation centralisée',
-    ],
-  },
-];
