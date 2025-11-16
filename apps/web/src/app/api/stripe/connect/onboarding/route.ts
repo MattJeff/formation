@@ -1,5 +1,5 @@
 // ============================================
-// 🔗 STRIPE CONNECT ONBOARDING API ROUTE
+// 🔗 STRIPE CONNECT ONBOARDING API ROUTE v2
 // ============================================
 // Route: POST /api/stripe/connect/onboarding
 // Crée un compte Stripe Connect pour un créateur et génère le lien d'onboarding
@@ -7,10 +7,11 @@
 // FLOW:
 // 1. Reçoit userId depuis le frontend
 // 2. Vérifie si le créateur a déjà un compte Stripe
-// 3. Crée un nouveau compte Stripe Express si nécessaire
-// 4. Génère un lien d'onboarding AccountLink
-// 5. Stocke l'account ID dans Supabase
-// 6. Retourne l'URL d'onboarding pour redirection
+// 3. Valide que le compte existant est toujours valide (gère TEST vs LIVE)
+// 4. Crée un nouveau compte Stripe Express si nécessaire
+// 5. Génère un lien d'onboarding AccountLink
+// 6. Stocke l'account ID dans Supabase
+// 7. Retourne l'URL d'onboarding pour redirection
 //
 // DEBUGGING:
 // - Chercher les logs: [STRIPE CONNECT ONBOARDING]
