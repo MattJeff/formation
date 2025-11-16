@@ -16,7 +16,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 
 export default function HomePage() {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
@@ -295,9 +294,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }
