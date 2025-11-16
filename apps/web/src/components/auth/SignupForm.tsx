@@ -95,6 +95,8 @@ export function SignupForm() {
       }
 
       if (data.user) {
+        // Stocker l'email pour pouvoir renvoyer l'email de vérification
+        localStorage.setItem('pendingVerificationEmail', formData.email);
         setSuccess(true);
         setTimeout(() => {
           router.push('/verify-email');
