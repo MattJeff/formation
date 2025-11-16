@@ -4,6 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import CookieConsent from '@/components/legal/CookieConsent';
+import { Footer } from '@/components/layout/Footer';
 
 // Force dynamic rendering for the entire app (required for authentication)
 export const dynamic = 'force-dynamic';
@@ -51,11 +52,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased flex flex-col min-h-screen`}>
         <ThemeProvider>
           <AuthProvider>
             {children}
           </AuthProvider>
+          <Footer />
           <CookieConsent />
         </ThemeProvider>
       </body>
