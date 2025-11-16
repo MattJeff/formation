@@ -1,6 +1,7 @@
 // ============================================
-// 📊 STRIPE CONNECT STATUS API ROUTE
+// 📊 STRIPE CONNECT STATUS API ROUTE v4-FORCE-REBUILD
 // ============================================
+// LAST UPDATE: 2025-11-16 18:35 - Force cache invalidation
 // Route: GET /api/stripe/connect/status?userId=xxx
 // Vérifie le statut du compte Stripe Connect d'un créateur
 //
