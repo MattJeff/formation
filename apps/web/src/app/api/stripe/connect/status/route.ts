@@ -72,6 +72,8 @@ export async function GET(req: NextRequest) {
     }
 
     console.log('✅ [STRIPE CONNECT STATUS] Profil trouvé:', {
+      userId: userId,
+      stripeAccountId: profile.stripe_account_id,
       hasStripeAccount: !!profile.stripe_account_id,
       currentStatus: profile.stripe_account_status,
     });
