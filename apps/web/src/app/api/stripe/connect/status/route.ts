@@ -66,12 +66,17 @@ export async function GET(req: NextRequest) {
 
     console.log('👤 [STRIPE CONNECT STATUS] Récupération profil depuis Supabase...');
     console.log('👤 Query: SELECT * FROM profiles WHERE id =', userId);
+    console.log('👤 Timestamp avant query:', new Date().toISOString());
 
+    // Force fresh data from database (no cache)
+    // Utilise maybeSingle() au lieu de single() pour éviter les erreurs de cache
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, email, stripe_account_id, stripe_account_status, stripe_onboarding_completed')
+      .select('id, email, stripe_account_id, stripe_account_status, stripe_onboarding_completed, updated_at')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+
+    console.log('👤 Timestamp après query:', new Date().toISOString());
 
     console.log('👤 [STRIPE CONNECT STATUS] Résultat requête Supabase:');
     console.log('  - Error:', profileError);
@@ -90,6 +95,7 @@ export async function GET(req: NextRequest) {
     console.log('  - stripe_account_id:', profile.stripe_account_id);
     console.log('  - stripe_account_status:', profile.stripe_account_status);
     console.log('  - stripe_onboarding_completed:', profile.stripe_onboarding_completed);
+    console.log('  - updated_at:', profile.updated_at);
 
     // Si pas de compte Stripe, retourner not_connected
     if (!profile.stripe_account_id) {
