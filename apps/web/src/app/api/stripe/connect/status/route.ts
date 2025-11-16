@@ -98,8 +98,14 @@ export async function GET(req: NextRequest) {
       account = await stripe.accounts.retrieve(profile.stripe_account_id);
     } catch (stripeError: any) {
       // Si le compte n'existe pas en LIVE (mais existe en TEST)
-      if (stripeError.code === 'resource_missing' || stripeError.message?.includes('similar object exists in test mode')) {
+      const isTestAccountError =
+        stripeError.code === 'resource_missing' ||
+        stripeError.message?.includes('similar object exists in test mode') ||
+        stripeError.message?.includes('was a test account created with a testmode key');
+
+      if (isTestAccountError) {
         console.log('⚠️ [STRIPE CONNECT STATUS] Compte TEST détecté en mode LIVE - nettoyage');
+        console.log('Message Stripe:', stripeError.message);
 
         // Nettoyer l'ancien compte TEST de la BDD
         await supabase
