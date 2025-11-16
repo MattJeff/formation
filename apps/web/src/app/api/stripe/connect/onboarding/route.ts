@@ -81,7 +81,31 @@ export async function POST(req: NextRequest) {
     const stripe = getStripeServerInstance();
     let accountId = profile.stripe_account_id;
 
-    if (!accountId) {
+    // Vérifier si le compte existant est valide
+    let needNewAccount = !accountId;
+
+    if (accountId) {
+      try {
+        console.log('🔍 [STRIPE CONNECT ONBOARDING] Vérification compte existant:', accountId);
+        await stripe.accounts.retrieve(accountId);
+        console.log('♻️  [STRIPE CONNECT ONBOARDING] Compte existant valide:', accountId);
+      } catch (error: any) {
+        const isTestAccountError =
+          error.code === 'resource_missing' ||
+          error.message?.includes('similar object exists in test mode') ||
+          error.message?.includes('was a test account created with a testmode key');
+
+        if (isTestAccountError) {
+          console.log('⚠️ [STRIPE CONNECT ONBOARDING] Compte TEST détecté - création nouveau compte LIVE');
+          needNewAccount = true;
+          accountId = null;
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    if (needNewAccount) {
       // Créer un nouveau compte Stripe Express
       console.log('💳 [STRIPE CONNECT ONBOARDING] Création compte Stripe Express...');
 
@@ -119,8 +143,6 @@ export async function POST(req: NextRequest) {
       }
 
       console.log('✅ [STRIPE CONNECT ONBOARDING] Account ID stocké dans Supabase');
-    } else {
-      console.log('♻️  [STRIPE CONNECT ONBOARDING] Compte existant:', accountId);
     }
 
     // ============================================
