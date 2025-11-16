@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings, TrendingUp, CreditCard, Menu, X } from 'lucide-react';
+import { LogOut, User, Settings, TrendingUp, CreditCard, Menu, X, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/lib/supabase';
@@ -62,6 +62,10 @@ export function Header() {
             </Link>
             <Link href="/dashboard" className="text-sm hover:text-primary">
               Tableau de bord
+            </Link>
+            <Link href="/faq" className="flex items-center gap-1 text-sm hover:text-primary" title="Aide & Support">
+              <HelpCircle className="h-4 w-4" />
+              Aide
             </Link>
 
             {/* Theme Toggle */}
@@ -136,6 +140,14 @@ export function Header() {
               >
                 Tableau de bord
               </Link>
+              <Link
+                href="/faq"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <HelpCircle className="h-4 w-4" />
+                Aide & Support
+              </Link>
               <hr className="border-border" />
               <Link
                 href="/profile"
@@ -192,6 +204,10 @@ export function Header() {
             </Link>
             <Link href="/creator/analytics" className="text-sm hover:text-primary">
               Analytics
+            </Link>
+            <Link href="/faq" className="flex items-center gap-1 text-sm hover:text-primary" title="Aide & Support">
+              <HelpCircle className="h-4 w-4" />
+              Aide
             </Link>
 
             {/* Theme Toggle */}
@@ -283,6 +299,14 @@ export function Header() {
               >
                 Analytics
               </Link>
+              <Link
+                href="/faq"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <HelpCircle className="h-4 w-4" />
+                Aide & Support
+              </Link>
               <hr className="border-border" />
               <Link
                 href="/profile"
@@ -348,6 +372,10 @@ export function Header() {
           <Link href="/courses" className="text-sm hover:text-primary">
             Cours
           </Link>
+          <Link href="/faq" className="flex items-center gap-1 text-sm hover:text-primary" title="Aide & Support">
+            <HelpCircle className="h-4 w-4" />
+            Aide
+          </Link>
 
           {/* Theme Toggle */}
           <ThemeToggle />
@@ -387,6 +415,15 @@ export function Header() {
             >
               Cours
             </Link>
+            <Link
+              href="/faq"
+              className="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <HelpCircle className="h-4 w-4" />
+              Aide & Support
+            </Link>
+            <hr className="border-border" />
             <Link
               href="/login"
               className="block px-4 py-3 rounded-lg hover:bg-accent"
