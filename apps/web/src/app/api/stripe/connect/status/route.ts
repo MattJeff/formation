@@ -92,7 +92,33 @@ export async function GET(req: NextRequest) {
     console.log('💳 [STRIPE CONNECT STATUS] Vérification compte Stripe:', profile.stripe_account_id);
 
     const stripe = getStripeServerInstance();
-    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+
+    let account;
+    try {
+      account = await stripe.accounts.retrieve(profile.stripe_account_id);
+    } catch (stripeError: any) {
+      // Si le compte n'existe pas en LIVE (mais existe en TEST)
+      if (stripeError.code === 'resource_missing' || stripeError.message?.includes('similar object exists in test mode')) {
+        console.log('⚠️ [STRIPE CONNECT STATUS] Compte TEST détecté en mode LIVE - nettoyage');
+
+        // Nettoyer l'ancien compte TEST de la BDD
+        await supabase
+          .from('profiles')
+          .update({
+            stripe_account_id: null,
+            stripe_account_status: 'not_connected',
+            stripe_onboarding_completed: false,
+          })
+          .eq('id', userId);
+
+        return NextResponse.json({
+          status: 'not_connected',
+          hasStripeAccount: false,
+          canReceivePayments: false,
+        }, { status: 200 });
+      }
+      throw stripeError; // Relancer l'erreur si c'est autre chose
+    }
 
     console.log('✅ [STRIPE CONNECT STATUS] Compte récupéré:', {
       charges_enabled: account.charges_enabled,
