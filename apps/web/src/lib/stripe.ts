@@ -45,13 +45,14 @@ export const stripe = {
 
   // Rediriger vers Stripe Checkout
   redirectToCheckout: async (sessionId: string) => {
-    const stripe = await getStripe();
-    if (!stripe) {
+    const stripeInstance = await getStripe();
+    if (!stripeInstance) {
       throw new Error('Stripe n\'a pas pu être chargé');
     }
 
-    const { error } = await stripe.redirectToCheckout({ sessionId });
-    
+    // @ts-ignore - redirectToCheckout exists on Stripe.js client
+    const { error } = await stripeInstance.redirectToCheckout({ sessionId });
+
     if (error) {
       throw error;
     }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendWelcomeFreeEmail, sendNewEnrollmentNotification } from '@/lib/resend';
 
 // POST - Enroll user in a course
 export async function POST(
@@ -113,8 +114,59 @@ export async function POST(
 
     console.log('✅ Inscription créée:', enrollment.id);
 
-    // Si le cours est gratuit, retourner directement
+    // Si le cours est gratuit, envoyer email de bienvenue
     if (isFree) {
+      try {
+        // Récupérer l'email de l'utilisateur
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, first_name, last_name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.email) {
+          const userName = profile.first_name || profile.email.split('@')[0];
+          const courseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/learn/${courseId}`;
+
+          // Envoyer email de bienvenue à l'étudiant
+          await sendWelcomeFreeEmail({
+            to: profile.email,
+            userName,
+            courseName: course.title,
+            courseUrl,
+          });
+
+          console.log('✅ [ENROLL] Email de bienvenue envoyé');
+
+          // Récupérer les infos du créateur pour notification
+          const { data: creator } = await supabase
+            .from('profiles')
+            .select('email, first_name, last_name')
+            .eq('id', course.creator_id)
+            .single();
+
+          if (creator?.email) {
+            const creatorName = `${creator.first_name} ${creator.last_name}`;
+            const studentName = profile.first_name || profile.email.split('@')[0];
+
+            // Notifier le créateur
+            await sendNewEnrollmentNotification({
+              to: creator.email,
+              creatorName,
+              studentName,
+              courseName: course.title,
+              courseUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/courses/${courseId}`,
+              price: 0,
+            });
+
+            console.log('✅ [ENROLL] Notification créateur envoyée');
+          }
+        }
+      } catch (emailError) {
+        // Ne pas faire échouer l'inscription si l'email échoue
+        console.error('⚠️ [ENROLL] Erreur envoi email (non-bloquant):', emailError);
+      }
+
       return NextResponse.json({
         success: true,
         enrollment,

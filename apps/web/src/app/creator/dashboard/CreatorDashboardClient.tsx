@@ -97,14 +97,27 @@ export function CreatorDashboardClient() {
       // Calculer le taux d'engagement (leçons complétées / total leçons)
       let engagement = 0;
       if (enrollments && enrollments.length > 0) {
-        const { data: progress } = await supabase
-          .from('lesson_progress')
-          .select('id, is_completed')
-          .in('enrollment_id', enrollments.map(e => e.id));
+        const enrollmentIds = enrollments.map(e => e.id);
 
-        const completedLessons = progress?.filter(p => p.is_completed).length || 0;
-        const totalLessons = progress?.length || 1;
-        engagement = Math.round((completedLessons / totalLessons) * 100);
+        // Ne faire la requête que si on a des enrollment IDs
+        if (enrollmentIds.length > 0) {
+          try {
+            const { data: progress, error: progressError } = await supabase
+              .from('lesson_progress')
+              .select('id, is_completed')
+              .in('enrollment_id', enrollmentIds);
+
+            // Si erreur (ex: permissions RLS), ignorer silencieusement
+            if (!progressError && progress) {
+              const completedLessons = progress.filter(p => p.is_completed).length || 0;
+              const totalLessons = progress.length || 1;
+              engagement = Math.round((completedLessons / totalLessons) * 100);
+            }
+          } catch (error) {
+            // Ignorer les erreurs de permissions RLS
+            console.log('ℹ️ [DASHBOARD] Impossible de charger lesson_progress (permissions?)');
+          }
+        }
       }
 
       setStats({
