@@ -23,21 +23,18 @@ import { createClient } from '@supabase/supabase-js';
 import { getStripeServerInstance } from '@/types/stripe';
 
 // ============================================
-// 🔧 CONFIGURATION
-// ============================================
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// ============================================
 // 📨 POST /api/stripe/connect/onboarding
 // ============================================
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('🔗 [STRIPE CONNECT ONBOARDING] Début onboarding... (VERSION v2-with-validation)');
+    console.log('🔗 [STRIPE CONNECT ONBOARDING] Début onboarding... (v3-no-cache)');
+
+    // Créer un client Supabase frais pour chaque requête (évite le cache)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // ============================================
     // 1️⃣ VALIDATION DES DONNÉES

@@ -20,15 +20,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getStripeServerInstance } from '@/types/stripe';
 
-// ============================================
-// 🔧 CONFIGURATION
-// ============================================
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +29,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('📊 [STRIPE CONNECT STATUS] Début vérification statut...');
+    console.log('📊 [STRIPE CONNECT STATUS] Début vérification statut... (v2-no-cache)');
+
+    // Créer un client Supabase frais pour chaque requête (évite le cache)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // ============================================
     // 1️⃣ VALIDATION DES DONNÉES
