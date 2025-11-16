@@ -93,10 +93,18 @@ export async function GET(req: NextRequest) {
 
     // Si pas de compte Stripe, retourner not_connected
     if (!profile.stripe_account_id) {
+      console.log('📤 Retour: not_connected (pas de stripe_account_id)');
+      console.log('='.repeat(80));
       return NextResponse.json({
         status: 'not_connected',
         hasStripeAccount: false,
         canReceivePayments: false,
+        _debug: {
+          version: 'v4-FORCE-REBUILD',
+          profileFound: true,
+          stripeAccountId: null,
+          reason: 'no_stripe_account_id_in_database',
+        },
       }, { status: 200 });
     }
 
@@ -166,6 +174,13 @@ export async function GET(req: NextRequest) {
           status: 'not_connected',
           hasStripeAccount: false,
           canReceivePayments: false,
+          _debug: {
+            version: 'v4-FORCE-REBUILD',
+            profileFound: true,
+            stripeAccountId: profile.stripe_account_id,
+            reason: 'test_account_detected_and_cleaned',
+            errorMessage: stripeError.message,
+          },
         }, { status: 200 });
       }
       console.log('❌ Erreur Stripe non gérée, relance de l\'erreur');
@@ -232,6 +247,13 @@ export async function GET(req: NextRequest) {
         payoutsEnabled: account.payouts_enabled,
         detailsSubmitted: account.details_submitted,
         email: account.email,
+      },
+      _debug: {
+        version: 'v4-FORCE-REBUILD',
+        profileFound: true,
+        stripeAccountId: profile.stripe_account_id,
+        accountRetrievedFromStripe: true,
+        calculatedStatus: status,
       },
     }, { status: 200 });
 
