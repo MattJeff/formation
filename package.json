@@ -16,12 +16,18 @@
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "turbo": "^1.11.0",
     "prettier": "^3.1.0",
+    "turbo": "^1.11.0",
     "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "recharts": "^3.4.1",
+    "tailwindcss": "^4.1.17"
   }
 }
