@@ -56,11 +56,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  // Éviter le flash de thème incorrect (hydration mismatch)
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Toujours fournir le Provider, même pendant le montage initial
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
