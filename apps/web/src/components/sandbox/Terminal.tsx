@@ -14,13 +14,13 @@ export function Terminal() {
     <div className="h-full bg-background p-4 font-mono text-sm">
       <div ref={terminalRef} className="h-full">
         <div className="text-green-400">
-          <p>skillforge@workspace:~/project$ npm install</p>
+          <p>brainow@workspace:~/project$ npm install</p>
           <p className="text-muted-foreground">
             added 142 packages, and audited 143 packages in 3s
           </p>
           <p className="text-muted-foreground">found 0 vulnerabilities</p>
           <br />
-          <p>skillforge@workspace:~/project$ npm run dev</p>
+          <p>brainow@workspace:~/project$ npm run dev</p>
           <p className="text-blue-400">&gt; dev</p>
           <p className="text-blue-400">&gt; vite</p>
           <br />
@@ -29,7 +29,7 @@ export function Terminal() {
           <p className="text-muted-foreground">➜ Network: use --host to expose</p>
           <br />
           <p className="flex items-center">
-            skillforge@workspace:~/project$ <span className="ml-1 animate-pulse">▊</span>
+            brainow@workspace:~/project$ <span className="ml-1 animate-pulse">▊</span>
           </p>
         </div>
       </div>

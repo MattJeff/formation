@@ -17,7 +17,7 @@ export default function LoginPage() {
         <div className="rounded-lg border border-border bg-card p-8">
           <h1 className="mb-2 text-3xl font-bold">Connexion</h1>
           <p className="mb-8 text-muted-foreground">
-            Connectez-vous à votre compte SkillForge
+            Connectez-vous à votre compte Brainow
           </p>
 
           <LoginForm />

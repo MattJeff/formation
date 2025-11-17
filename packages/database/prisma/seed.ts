@@ -27,7 +27,7 @@ async function main() {
   // Créer un créateur
   const creator = await prisma.user.create({
     data: {
-      email: 'creator@skillforge.com',
+      email: 'creator@brainow.com',
       username: 'john_creator',
       firstName: 'John',
       lastName: 'Doe',
@@ -46,7 +46,7 @@ async function main() {
   // Créer un apprenant
   const learner = await prisma.user.create({
     data: {
-      email: 'learner@skillforge.com',
+      email: 'learner@brainow.com',
       username: 'jane_learner',
       firstName: 'Jane',
       lastName: 'Smith',

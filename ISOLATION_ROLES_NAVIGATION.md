@@ -19,7 +19,7 @@
 ### LEARNER (Apprenant)
 ```
 Header:
-├─ Logo SkillForge
+├─ Logo Brainow
 ├─ Catalogue (tous les cours)
 ├─ Mes Cours (cours achetés)
 ├─ Parcours (learning paths)
@@ -43,7 +43,7 @@ Pages accessibles:
 ### CREATOR (Formateur)
 ```
 Header:
-├─ Logo SkillForge
+├─ Logo Brainow
 ├─ Dashboard
 ├─ Mes Formations (créées)
 ├─ Étudiants
@@ -164,7 +164,7 @@ export function Header() {
     return (
       <header className="border-b">
         <nav>
-          <Link href="/">SkillForge</Link>
+          <Link href="/">Brainow</Link>
           <Link href="/courses">Catalogue</Link>
           <Link href="/my-courses">Mes Cours</Link>
           <Link href="/dashboard">Tableau de bord</Link>
@@ -179,7 +179,7 @@ export function Header() {
     return (
       <header className="border-b">
         <nav>
-          <Link href="/">SkillForge</Link>
+          <Link href="/">Brainow</Link>
           <Link href="/creator/dashboard">Dashboard</Link>
           <Link href="/creator/courses">Mes Formations</Link>
           <Link href="/creator/students">Étudiants</Link>
@@ -194,7 +194,7 @@ export function Header() {
   return (
     <header className="border-b">
       <nav>
-        <Link href="/">SkillForge</Link>
+        <Link href="/">Brainow</Link>
         <Link href="/courses">Cours</Link>
         <Link href="/login">Connexion</Link>
         <Link href="/signup">S'inscrire</Link>

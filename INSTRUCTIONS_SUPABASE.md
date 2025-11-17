@@ -6,7 +6,7 @@
 ```
 1. Aller sur https://supabase.com
 2. Se connecter à votre compte
-3. Sélectionner votre projet SkillForge
+3. Sélectionner votre projet Brainow
 ```
 
 ### 2. Exécuter le Schéma SQL

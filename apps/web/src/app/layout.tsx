@@ -22,7 +22,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SkillForge - Forge Your Professional Skills',
+  title: 'Brainow - Forge Your Professional Skills',
   description:
     'Plateforme de formation nouvelle génération avec IA et Sandbox interactif. Construisez des compétences vérifiables, pas seulement des certificats.',
   keywords: [
@@ -34,13 +34,13 @@ export const metadata: Metadata = {
     'portfolio',
     'compétences',
   ],
-  authors: [{ name: 'SkillForge Team' }],
+  authors: [{ name: 'Brainow Team' }],
   openGraph: {
     type: 'website',
     locale: 'fr_FR',
-    url: 'https://skillforge.com',
-    siteName: 'SkillForge',
-    title: 'SkillForge - Forge Your Professional Skills',
+    url: 'https://brainow.com',
+    siteName: 'Brainow',
+    title: 'Brainow - Forge Your Professional Skills',
     description: 'De la théorie à la pratique professionnelle',
   },
 };

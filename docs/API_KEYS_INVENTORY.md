@@ -1,6 +1,6 @@
-# Inventaire des Clés d'API & Services pour SkillForge
+# Inventaire des Clés d'API & Services pour Brainow
 
-Ce document liste **toutes** les clés d'API, services externes et secrets nécessaires pour construire la plateforme SkillForge de A à Z.
+Ce document liste **toutes** les clés d'API, services externes et secrets nécessaires pour construire la plateforme Brainow de A à Z.
 
 ---
 

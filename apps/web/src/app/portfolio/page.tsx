@@ -11,7 +11,7 @@ export default function PortfolioPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">SkillForge</Link>
+          <Link href="/" className="text-xl font-bold">Brainow</Link>
           <Link href="/portfolio/edit" className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-primary-foreground">
             <Plus className="h-4 w-4" />
             Ajouter un projet

@@ -77,7 +77,7 @@
 ```
 ┌─────────────────────────────────────────────┐
 │         ✅ Email vérifié avec succès !      │
-│   Bienvenue sur SkillForge. Choisissez :   │
+│   Bienvenue sur Brainow. Choisissez :   │
 └─────────────────────────────────────────────┘
 
 ┌──────────────────────┐  ┌──────────────────────┐
@@ -155,7 +155,7 @@ Dans le Dashboard Supabase :
 ### Étape 2 : Vérification
 ```bash
 1. Ouvrez votre boîte email
-2. Trouvez l'email de SkillForge
+2. Trouvez l'email de Brainow
 3. Cliquez sur "Confirmer votre email"
 4. ✅ Vous êtes redirigé vers /onboarding/role
 ```

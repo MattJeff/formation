@@ -1,4 +1,4 @@
-# 🚀 Démarrage Rapide - SkillForge
+# 🚀 Démarrage Rapide - Brainow
 
 ## ✅ Étape 1: Installation (en cours...)
 

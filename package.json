@@ -1,8 +1,8 @@
 {
-  "name": "skillforge",
+  "name": "brainow",
   "version": "1.0.0",
   "private": true,
-  "description": "SkillForge - Plateforme de formation nouvelle génération avec IA et Sandbox interactif",
+  "description": "Brainow - Plateforme de formation nouvelle génération avec IA et Sandbox interactif",
   "workspaces": [
     "apps/*",
     "packages/*"

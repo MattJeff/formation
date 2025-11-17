@@ -1,4 +1,4 @@
-# SkillForge - Spécifications Techniques Complètes
+# Brainow - Spécifications Techniques Complètes
 
 ## Table des Matières
 
@@ -15,7 +15,7 @@
 
 ## Vision & Philosophie
 
-SkillForge n'est pas une plateforme de formation traditionnelle. Notre mission est de **combler le fossé entre la connaissance théorique et la compétence professionnelle**.
+Brainow n'est pas une plateforme de formation traditionnelle. Notre mission est de **combler le fossé entre la connaissance théorique et la compétence professionnelle**.
 
 ### Les 4 Piliers Fondamentaux
 
@@ -31,7 +31,7 @@ SkillForge n'est pas une plateforme de formation traditionnelle. Notre mission e
 ### Structure du Monorepo
 
 ```
-skillforge/
+brainow/
 ├── apps/
 │   ├── web/              # Frontend Next.js (Vercel)
 │   ├── api/              # Backend NestJS (AWS/GCP)
@@ -340,8 +340,8 @@ const response = await anthropic.messages.create({
 | Env | Frontend | Backend | Database |
 |-----|----------|---------|----------|
 | Dev | localhost:3000 | localhost:4000 | Local PostgreSQL |
-| Staging | staging.skillforge.com | api-staging | Supabase Staging |
-| Production | skillforge.com | api.skillforge.com | Supabase Prod |
+| Staging | staging.brainow.com | api-staging | Supabase Staging |
+| Production | brainow.com | api.brainow.com | Supabase Prod |
 
 ### CI/CD Pipeline (GitHub Actions)
 

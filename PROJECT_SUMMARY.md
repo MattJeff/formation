@@ -1,14 +1,14 @@
-# SkillForge - Résumé du Projet
+# Brainow - Résumé du Projet
 
 ## 🎯 Vision
 
-**SkillForge** est une plateforme de formation nouvelle génération qui comble le fossé entre la connaissance théorique et la compétence professionnelle. Nous vendons de l'expérience et de l'employabilité, pas seulement de l'information.
+**Brainow** est une plateforme de formation nouvelle génération qui comble le fossé entre la connaissance théorique et la compétence professionnelle. Nous vendons de l'expérience et de l'employabilité, pas seulement de l'information.
 
 ---
 
 ## 🚀 Innovation Principale: Le Sandbox IA
 
-Le **SkillForge Sandbox** est un environnement de développement complet dans le navigateur où les apprenants travaillent sur des projets réels avec un **Client IA** qui simule une vraie relation professionnelle.
+Le **Brainow Sandbox** est un environnement de développement complet dans le navigateur où les apprenants travaillent sur des projets réels avec un **Client IA** qui simule une vraie relation professionnelle.
 
 ### Fonctionnalités Clés
 
@@ -22,7 +22,7 @@ Le **SkillForge Sandbox** est un environnement de développement complet dans le
 ## 📁 Structure du Projet
 
 ```
-skillforge/
+brainow/
 ├── apps/
 │   ├── web/              # Frontend Next.js (✅ Créé)
 │   ├── api/              # Backend NestJS (à créer)
@@ -259,9 +259,9 @@ Les contributions sont les bienvenues ! Voir [CONTRIBUTING.md](./CONTRIBUTING.md
 
 ## 📞 Contact
 
-- **Email**: dev@skillforge.com
-- **Discord**: [Rejoindre la communauté](https://discord.gg/skillforge)
-- **GitHub**: [github.com/votre-org/skillforge](https://github.com)
+- **Email**: dev@brainow.com
+- **Discord**: [Rejoindre la communauté](https://discord.gg/brainow)
+- **GitHub**: [github.com/votre-org/brainow](https://github.com)
 
 ---
 
@@ -271,6 +271,6 @@ MIT License - Voir [LICENSE](./LICENSE)
 
 ---
 
-**SkillForge - Forge Your Professional Skills** 🔥
+**Brainow - Forge Your Professional Skills** 🔥
 
 *De la théorie à la pratique professionnelle*

@@ -1,5 +1,5 @@
 -- ============================================
--- SCHÉMA COMPLET SUPABASE POUR SKILLFORGE
+-- SCHÉMA COMPLET SUPABASE POUR BRAINOW
 -- ============================================
 
 -- 1. TABLE DES PROFILS UTILISATEURS
