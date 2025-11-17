@@ -43,7 +43,7 @@ export function Header() {
       <header className="border-b border-border bg-background">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="text-xl font-bold cursor-pointer" onClick={() => router.push('/dashboard')}>
-            SkillForge
+            Brainow
           </div>
 
           <nav className="flex items-center space-x-6">
@@ -98,7 +98,7 @@ export function Header() {
       <header className="border-b border-border bg-background">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="text-xl font-bold cursor-pointer" onClick={() => router.push('/creator/dashboard')}>
-            SkillForge
+            Brainow
           </div>
 
           <nav className="flex items-center space-x-6">
@@ -159,7 +159,7 @@ export function Header() {
     <header className="border-b border-border bg-background">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="text-xl font-bold cursor-pointer" onClick={() => router.push('/')}>
-          SkillForge
+          Brainow
         </div>
 
         <nav className="flex items-center space-x-6">

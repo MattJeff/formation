@@ -1,6 +1,6 @@
-# Guide de Contribution - SkillForge
+# Guide de Contribution - Brainow
 
-Merci de votre intérêt pour contribuer à SkillForge ! Ce document vous guide à travers le processus de contribution.
+Merci de votre intérêt pour contribuer à Brainow ! Ce document vous guide à travers le processus de contribution.
 
 ---
 
@@ -19,7 +19,7 @@ En participant à ce projet, vous acceptez de respecter notre code de conduite:
 
 ### Signaler un Bug
 
-1. Vérifier que le bug n'a pas déjà été signalé dans les [Issues](https://github.com/votre-org/skillforge/issues)
+1. Vérifier que le bug n'a pas déjà été signalé dans les [Issues](https://github.com/votre-org/brainow/issues)
 2. Créer une nouvelle issue avec le template "Bug Report"
 3. Inclure:
    - Description claire du problème
@@ -43,9 +43,9 @@ En participant à ce projet, vous acceptez de respecter notre code de conduite:
 
 ```bash
 # Fork le repo sur GitHub, puis:
-git clone https://github.com/votre-username/skillforge.git
-cd skillforge
-git remote add upstream https://github.com/skillforge/skillforge.git
+git clone https://github.com/votre-username/brainow.git
+cd brainow
+git remote add upstream https://github.com/brainow/brainow.git
 ```
 
 #### 2. Créer une Branche
@@ -375,9 +375,9 @@ async function createSandboxSession(
 
 ## Questions ?
 
-- **Discord**: [Rejoindre](https://discord.gg/skillforge)
-- **GitHub Discussions**: [Poser une question](https://github.com/votre-org/skillforge/discussions)
-- **Email**: dev@skillforge.com
+- **Discord**: [Rejoindre](https://discord.gg/brainow)
+- **GitHub Discussions**: [Poser une question](https://github.com/votre-org/brainow/discussions)
+- **Email**: dev@brainow.com
 
 ---
 

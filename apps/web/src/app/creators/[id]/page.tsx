@@ -5,7 +5,7 @@ export default function CreatorProfilePage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="container mx-auto flex h-16 items-center px-4">
-          <Link href="/" className="text-xl font-bold">SkillForge</Link>
+          <Link href="/" className="text-xl font-bold">Brainow</Link>
         </div>
       </header>
 

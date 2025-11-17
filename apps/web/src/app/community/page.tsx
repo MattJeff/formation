@@ -5,7 +5,7 @@ export default function CommunityPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">SkillForge</Link>
+          <Link href="/" className="text-xl font-bold">Brainow</Link>
           <nav className="flex items-center space-x-6">
             <Link href="/courses">Cours</Link>
             <Link href="/sandbox">Sandbox</Link>
@@ -15,7 +15,7 @@ export default function CommunityPage() {
       </header>
 
       <section className="container mx-auto px-4 py-16">
-        <h1 className="mb-4 text-4xl font-bold">Communauté SkillForge</h1>
+        <h1 className="mb-4 text-4xl font-bold">Communauté Brainow</h1>
         <p className="text-lg text-muted-foreground">
           Rejoignez des milliers de développeurs qui apprennent ensemble
         </p>

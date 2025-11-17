@@ -1,5 +1,5 @@
 {
-  "name": "@skillforge/database",
+  "name": "@brainow/database",
   "version": "1.0.0",
   "private": true,
   "main": "./index.ts",

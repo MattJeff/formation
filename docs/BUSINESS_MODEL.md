@@ -1,12 +1,12 @@
-# Modèle Économique - SkillForge
+# Modèle Économique - Brainow
 
-Ce document détaille la stratégie de monétisation et le modèle économique de la plateforme SkillForge.
+Ce document détaille la stratégie de monétisation et le modèle économique de la plateforme Brainow.
 
 ---
 
 ## Vision Économique
 
-SkillForge adopte un **modèle hybride Freemium + Marketplace** qui aligne les intérêts de tous les acteurs:
+Brainow adopte un **modèle hybride Freemium + Marketplace** qui aligne les intérêts de tous les acteurs:
 
 - **Apprenants**: Paient pour l'accès aux fonctionnalités premium et les cours
 - **Créateurs**: Génèrent des revenus récurrents via leurs cours
@@ -23,7 +23,7 @@ SkillForge adopte un **modèle hybride Freemium + Marketplace** qui aligne les i
 - **Accès**: À vie
 - **Inclus**: Vidéos, projets, support communauté
 
-#### Abonnement SkillForge Premium
+#### Abonnement Brainow Premium
 
 **Prix**: 29€/mois ou 290€/an (économie de 2 mois)
 
@@ -104,7 +104,7 @@ Soit environ 1-2 ventes de cours à 50-100€
 
 ---
 
-## 3. B2B - "SkillForge for Business"
+## 3. B2B - "Brainow for Business"
 
 ### Offre Entreprise
 
@@ -339,7 +339,7 @@ Valeur délivrée:
 1. **Commissions les plus basses du marché**:
    - Udemy: 50% (promo) à 97% (organique)
    - Teachable: 5% + 39$/mois
-   - **SkillForge**: 2-5% + 19-99€/mois
+   - **Brainow**: 2-5% + 19-99€/mois
 2. **Outils de création assistés par IA**
 3. **Communauté engagée** (pas de course au prix le plus bas)
 
@@ -365,7 +365,7 @@ Valeur délivrée:
 
 ## Conclusion
 
-Le modèle économique de SkillForge est conçu pour être:
+Le modèle économique de Brainow est conçu pour être:
 
 1. **Scalable**: Revenus récurrents (abonnements) + marketplace
 2. **Aligné**: Tous les acteurs gagnent quand la plateforme réussit

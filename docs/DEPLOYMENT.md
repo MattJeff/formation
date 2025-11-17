@@ -1,6 +1,6 @@
-# Guide de Déploiement - SkillForge
+# Guide de Déploiement - Brainow
 
-Ce guide détaille le processus de déploiement de la plateforme SkillForge en production.
+Ce guide détaille le processus de déploiement de la plateforme Brainow en production.
 
 ---
 
@@ -43,8 +43,8 @@ Ce guide détaille le processus de déploiement de la plateforme SkillForge en p
 | Environnement | URL | Branche Git | Auto-deploy |
 |---------------|-----|-------------|-------------|
 | **Development** | localhost:3000 | - | Non |
-| **Staging** | staging.skillforge.com | `develop` | Oui |
-| **Production** | skillforge.com | `main` | Manuel |
+| **Staging** | staging.brainow.com | `develop` | Oui |
+| **Production** | brainow.com | `main` | Manuel |
 
 ---
 
@@ -67,7 +67,7 @@ Ce guide détaille le processus de déploiement de la plateforme SkillForge en p
 3. **Configuration du projet**
    - **Framework Preset**: Next.js
    - **Root Directory**: `apps/web`
-   - **Build Command**: `cd ../.. && npm run build --filter=@skillforge/web`
+   - **Build Command**: `cd ../.. && npm run build --filter=@brainow/web`
    - **Output Directory**: `.next`
 
 ### Variables d'Environnement
@@ -76,9 +76,9 @@ Dans le dashboard Vercel (Settings → Environment Variables):
 
 ```bash
 # Application
-NEXT_PUBLIC_APP_URL=https://skillforge.com
-NEXT_PUBLIC_API_URL=https://api.skillforge.com
-NEXT_PUBLIC_SANDBOX_URL=https://sandbox.skillforge.com
+NEXT_PUBLIC_APP_URL=https://brainow.com
+NEXT_PUBLIC_API_URL=https://api.brainow.com
+NEXT_PUBLIC_SANDBOX_URL=https://sandbox.brainow.com
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -95,7 +95,7 @@ NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
 ### Domaine Personnalisé
 
 1. Dans Vercel: Settings → Domains
-2. Ajouter `skillforge.com` et `www.skillforge.com`
+2. Ajouter `brainow.com` et `www.brainow.com`
 3. Configurer les DNS chez votre registrar:
    ```
    A     @     76.76.21.21
@@ -128,7 +128,7 @@ vercel --prod
 ```bash
 # Créer le cluster (prend ~15 minutes)
 eksctl create cluster \
-  --name skillforge-prod \
+  --name brainow-prod \
   --region eu-west-1 \
   --nodegroup-name standard-workers \
   --node-type t3.medium \
@@ -138,7 +138,7 @@ eksctl create cluster \
   --managed
 
 # Configurer kubectl
-aws eks update-kubeconfig --region eu-west-1 --name skillforge-prod
+aws eks update-kubeconfig --region eu-west-1 --name brainow-prod
 
 # Vérifier
 kubectl get nodes
@@ -151,16 +151,16 @@ kubectl get nodes
 ```bash
 # Build
 cd apps/api
-docker build -t skillforge/api:latest .
+docker build -t brainow/api:latest .
 
 # Tag pour ECR
-docker tag skillforge/api:latest 123456789.dkr.ecr.eu-west-1.amazonaws.com/skillforge/api:latest
+docker tag brainow/api:latest 123456789.dkr.ecr.eu-west-1.amazonaws.com/brainow/api:latest
 
 # Login ECR
 aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 123456789.dkr.ecr.eu-west-1.amazonaws.com
 
 # Push
-docker push 123456789.dkr.ecr.eu-west-1.amazonaws.com/skillforge/api:latest
+docker push 123456789.dkr.ecr.eu-west-1.amazonaws.com/brainow/api:latest
 ```
 
 2. **Déployer sur Kubernetes**
@@ -170,27 +170,27 @@ docker push 123456789.dkr.ecr.eu-west-1.amazonaws.com/skillforge/api:latest
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skillforge-api
+  name: brainow-api
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: skillforge-api
+      app: brainow-api
   template:
     metadata:
       labels:
-        app: skillforge-api
+        app: brainow-api
     spec:
       containers:
       - name: api
-        image: 123456789.dkr.ecr.eu-west-1.amazonaws.com/skillforge/api:latest
+        image: 123456789.dkr.ecr.eu-west-1.amazonaws.com/brainow/api:latest
         ports:
         - containerPort: 4000
         env:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: skillforge-secrets
+              name: brainow-secrets
               key: database-url
         resources:
           requests:
@@ -203,19 +203,19 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: skillforge-api
+  name: brainow-api
 spec:
   type: LoadBalancer
   ports:
   - port: 80
     targetPort: 4000
   selector:
-    app: skillforge-api
+    app: brainow-api
 ```
 
 ```bash
 # Créer les secrets
-kubectl create secret generic skillforge-secrets \
+kubectl create secret generic brainow-secrets \
   --from-literal=database-url="postgresql://..." \
   --from-literal=jwt-secret="..." \
   --from-literal=stripe-secret="..."
@@ -235,23 +235,23 @@ kubectl get svc
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: skillforge-ingress
+  name: brainow-ingress
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   tls:
   - hosts:
-    - api.skillforge.com
-    secretName: skillforge-tls
+    - api.brainow.com
+    secretName: brainow-tls
   rules:
-  - host: api.skillforge.com
+  - host: api.brainow.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: skillforge-api
+            name: brainow-api
             port:
               number: 80
 ```
@@ -289,21 +289,21 @@ spec:
       serviceAccountName: sandbox-manager
       containers:
       - name: manager
-        image: skillforge/sandbox-manager:latest
+        image: brainow/sandbox-manager:latest
         env:
         - name: KUBERNETES_NAMESPACE
-          value: "skillforge-workspaces"
+          value: "brainow-workspaces"
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: skillforge-workspaces
+  name: brainow-workspaces
 ---
 apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: workspace-quota
-  namespace: skillforge-workspaces
+  namespace: brainow-workspaces
 spec:
   hard:
     requests.cpu: "50"
@@ -362,7 +362,7 @@ Supabase Pro inclut des backups automatiques quotidiens. Pour des backups person
 #!/bin/bash
 DATE=$(date +%Y%m%d)
 pg_dump $DATABASE_URL | gzip > backup-$DATE.sql.gz
-aws s3 cp backup-$DATE.sql.gz s3://skillforge-backups/
+aws s3 cp backup-$DATE.sql.gz s3://brainow-backups/
 ```
 
 ---
@@ -413,14 +413,14 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/skillforge/api:$IMAGE_TAG apps/api
-          docker push $ECR_REGISTRY/skillforge/api:$IMAGE_TAG
+          docker build -t $ECR_REGISTRY/brainow/api:$IMAGE_TAG apps/api
+          docker push $ECR_REGISTRY/brainow/api:$IMAGE_TAG
       
       - name: Deploy to EKS
         run: |
-          aws eks update-kubeconfig --region eu-west-1 --name skillforge-prod
-          kubectl set image deployment/skillforge-api api=$ECR_REGISTRY/skillforge/api:$IMAGE_TAG
-          kubectl rollout status deployment/skillforge-api
+          aws eks update-kubeconfig --region eu-west-1 --name brainow-prod
+          kubectl set image deployment/brainow-api api=$ECR_REGISTRY/brainow/api:$IMAGE_TAG
+          kubectl rollout status deployment/brainow-api
 ```
 
 ---
@@ -445,8 +445,8 @@ if (process.env.NODE_ENV === 'production') {
 ### Uptime Monitoring
 
 Configurer [UptimeRobot](https://uptimerobot.com) ou [Pingdom](https://pingdom.com):
-- `https://skillforge.com` (check toutes les 5 min)
-- `https://api.skillforge.com/health` (check toutes les 5 min)
+- `https://brainow.com` (check toutes les 5 min)
+- `https://api.brainow.com/health` (check toutes les 5 min)
 
 ### Alertes Slack
 
@@ -457,7 +457,7 @@ receivers:
   slack_configs:
   - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
     channel: '#alerts-prod'
-    title: 'SkillForge Alert'
+    title: 'Brainow Alert'
     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
 ```
 
@@ -478,13 +478,13 @@ vercel rollback
 
 ```bash
 # Voir l'historique
-kubectl rollout history deployment/skillforge-api
+kubectl rollout history deployment/brainow-api
 
 # Rollback à la version précédente
-kubectl rollout undo deployment/skillforge-api
+kubectl rollout undo deployment/brainow-api
 
 # Ou à une version spécifique
-kubectl rollout undo deployment/skillforge-api --to-revision=3
+kubectl rollout undo deployment/brainow-api --to-revision=3
 ```
 
 ---

@@ -55,7 +55,7 @@ export default function RoleSelectionPage() {
           </div>
           <h1 className="mb-2 text-3xl font-bold">Email vérifié avec succès !</h1>
           <p className="text-lg text-muted-foreground">
-            Bienvenue sur SkillForge. Comment souhaitez-vous utiliser la plateforme ?
+            Bienvenue sur Brainow. Comment souhaitez-vous utiliser la plateforme ?
           </p>
         </div>
 

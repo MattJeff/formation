@@ -9,7 +9,7 @@ export default function HomePage() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center space-x-2">
             <Code2 className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">SkillForge</span>
+            <span className="text-xl font-bold">Brainow</span>
           </div>
           <nav className="flex items-center space-x-6">
             <Link href="/courses" className="text-sm hover:text-primary transition-colors">
@@ -65,7 +65,7 @@ export default function HomePage() {
       {/* Features Section */}
       <section className="container mx-auto px-4 py-24">
         <h2 className="mb-16 text-center text-3xl font-bold md:text-4xl">
-          Pourquoi SkillForge est différent
+          Pourquoi Brainow est différent
         </h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           <FeatureCard
@@ -98,7 +98,7 @@ export default function HomePage() {
             Prêt à transformer votre apprentissage ?
           </h2>
           <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
-            Rejoignez des milliers de développeurs qui construisent leur avenir avec SkillForge.
+            Rejoignez des milliers de développeurs qui construisent leur avenir avec Brainow.
           </p>
           <Link
             href="/signup"
@@ -116,7 +116,7 @@ export default function HomePage() {
             <div>
               <div className="mb-4 flex items-center space-x-2">
                 <Code2 className="h-6 w-6 text-primary" />
-                <span className="font-bold">SkillForge</span>
+                <span className="font-bold">Brainow</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Forge your professional skills in the fire of action.
@@ -184,7 +184,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="mt-12 border-t border-border pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 SkillForge. Tous droits réservés.</p>
+            <p>&copy; 2024 Brainow. Tous droits réservés.</p>
           </div>
         </div>
       </footer>

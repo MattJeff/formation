@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { prisma, UserRole } from '@skillforge/database';
+import { prisma, UserRole } from '@brainow/database';
 
 export async function POST(request: Request) {
   try {

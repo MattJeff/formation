@@ -1,8 +1,8 @@
-# Architecture du Sandbox SkillForge
+# Architecture du Sandbox Brainow
 
 ## Vue d'Ensemble
 
-Le **SkillForge Sandbox** est l'innovation centrale de la plateforme. C'est un environnement de développement complet dans le navigateur où les apprenants travaillent sur des projets réels avec un **Client IA** qui simule une vraie relation professionnelle.
+Le **Brainow Sandbox** est l'innovation centrale de la plateforme. C'est un environnement de développement complet dans le navigateur où les apprenants travaillent sur des projets réels avec un **Client IA** qui simule une vraie relation professionnelle.
 
 ---
 
@@ -129,13 +129,13 @@ kind: Pod
 metadata:
   name: workspace-user-123-proj-456
   labels:
-    app: skillforge-workspace
+    app: brainow-workspace
     userId: user-123
     projectId: proj-456
 spec:
   containers:
   - name: workspace
-    image: skillforge/workspace:latest
+    image: brainow/workspace:latest
     ports:
     - containerPort: 8080
     resources:
@@ -401,7 +401,7 @@ Client IA:
 #### 2. Boilerplate & Assets
 
 ```
-Dépôt Git: https://github.com/skillforge/boilerplate-portfolio
+Dépôt Git: https://github.com/brainow/boilerplate-portfolio
 Structure:
   /images/
     photo1.jpg

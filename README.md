@@ -1,12 +1,12 @@
-# SkillForge - Plateforme de Formation Nouvelle Génération
+# Brainow - Plateforme de Formation Nouvelle Génération
 
 ## 🎯 Vision
 
-SkillForge est une plateforme d'apprentissage révolutionnaire qui comble le fossé entre la connaissance théorique et la compétence professionnelle. Nous vendons de l'expérience et de l'employabilité, pas seulement de l'information.
+Brainow est une plateforme d'apprentissage révolutionnaire qui comble le fossé entre la connaissance théorique et la compétence professionnelle. Nous vendons de l'expérience et de l'employabilité, pas seulement de l'information.
 
 ## 🚀 Fonctionnalités Principales
 
-### Le SkillForge Sandbox
+### Le Brainow Sandbox
 - **Client Virtuel IA** : Simulation de relations client réalistes avec feedback intelligent
 - **IDE Cloud Intégré** : Environnement de développement complet dans le navigateur
 - **Moteur de Vérification Automatisé** : Tests automatiques avec Playwright
@@ -38,7 +38,7 @@ SkillForge est une plateforme d'apprentissage révolutionnaire qui comble le fos
 
 ### Structure du Monorepo
 ```
-skillforge/
+brainow/
 ├── apps/
 │   ├── web/              # Application frontend Next.js
 │   ├── api/              # Backend NestJS
@@ -63,8 +63,8 @@ skillforge/
 
 ```bash
 # Cloner le repository
-git clone https://github.com/votre-org/skillforge.git
-cd skillforge
+git clone https://github.com/votre-org/brainow.git
+cd brainow
 
 # Installer les dépendances
 npm install
@@ -159,10 +159,10 @@ Les contributions sont les bienvenues ! Consultez [CONTRIBUTING.md](./CONTRIBUTI
 
 ## 📄 Licence
 
-Copyright © 2024 SkillForge. Tous droits réservés.
+Copyright © 2024 Brainow. Tous droits réservés.
 
 ## 📞 Support
 
-- Email: support@skillforge.com
-- Discord: [Rejoindre la communauté](https://discord.gg/skillforge)
-- Documentation: [docs.skillforge.com](https://docs.skillforge.com)
+- Email: support@brainow.com
+- Discord: [Rejoindre la communauté](https://discord.gg/brainow)
+- Documentation: [docs.brainow.com](https://docs.brainow.com)

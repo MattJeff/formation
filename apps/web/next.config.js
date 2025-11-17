@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  transpilePackages: ['@skillforge/ui', '@skillforge/types'],
+  transpilePackages: ['@brainow/ui', '@brainow/types'],
   images: {
     domains: ['supabase.co', 'mux.com'],
   },

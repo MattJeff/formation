@@ -1,6 +1,6 @@
-# Guide de Démarrage - SkillForge
+# Guide de Démarrage - Brainow
 
-Ce guide vous accompagne pas à pas pour mettre en place l'environnement de développement SkillForge.
+Ce guide vous accompagne pas à pas pour mettre en place l'environnement de développement Brainow.
 
 ---
 
@@ -21,8 +21,8 @@ Avant de commencer, assurez-vous d'avoir installé:
 ### 1. Cloner le Repository
 
 ```bash
-git clone https://github.com/votre-org/skillforge.git
-cd skillforge
+git clone https://github.com/votre-org/brainow.git
+cd brainow
 ```
 
 ### 2. Installer les Dépendances
@@ -47,7 +47,7 @@ nano .env.local  # ou code .env.local
 
 ```bash
 # Base de données (Supabase ou local)
-DATABASE_URL="postgresql://postgres:password@localhost:5432/skillforge"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/brainow"
 SUPABASE_URL="https://your-project.supabase.co"
 SUPABASE_ANON_KEY="your-anon-key"
 
@@ -89,7 +89,7 @@ Cela démarre:
 ## Structure du Projet
 
 ```
-skillforge/
+brainow/
 ├── apps/
 │   ├── web/                    # Frontend Next.js
 │   │   ├── src/
@@ -137,10 +137,10 @@ skillforge/
 npm run dev
 
 # Lancer uniquement le frontend
-npm run dev --filter=@skillforge/web
+npm run dev --filter=@brainow/web
 
 # Lancer uniquement le backend
-npm run dev --filter=@skillforge/api
+npm run dev --filter=@brainow/api
 ```
 
 ### Base de Données
@@ -254,7 +254,7 @@ kubectl get nodes
 ```bash
 # Build l'image Docker du workspace
 cd apps/sandbox
-docker build -t skillforge/workspace:dev .
+docker build -t brainow/workspace:dev .
 
 # Déployer sur Kubernetes
 kubectl apply -f k8s/workspace-deployment.yaml
@@ -267,7 +267,7 @@ kubectl get pods
 
 ## Troubleshooting
 
-### Erreur: "Cannot find module '@skillforge/database'"
+### Erreur: "Cannot find module '@brainow/database'"
 
 ```bash
 # Régénérer le client Prisma
@@ -331,9 +331,9 @@ Maintenant que votre environnement est configuré:
 
 ## Support
 
-- **Issues GitHub**: [github.com/votre-org/skillforge/issues](https://github.com)
-- **Discord**: [Rejoindre la communauté](https://discord.gg/skillforge)
-- **Email**: dev@skillforge.com
+- **Issues GitHub**: [github.com/votre-org/brainow/issues](https://github.com)
+- **Discord**: [Rejoindre la communauté](https://discord.gg/brainow)
+- **Email**: dev@brainow.com
 
 ---
 
